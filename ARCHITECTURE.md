@@ -62,7 +62,7 @@ User message
        └── Mode 9 (Ship)      → shipper
 ```
 
-This is different from gstack's approach where users manually invoke each skill (`/qa`, `/review`, etc.). The constitution auto-detects intent and chains agents.
+The constitution auto-detects intent and chains agents — no manual skill invocation needed.
 
 ### Agent Categories
 

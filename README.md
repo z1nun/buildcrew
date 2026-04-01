@@ -258,19 +258,6 @@ model: opus    # or sonnet, haiku
          └── Debug:    investigator
 ```
 
-## Compared to gstack
-
-| | buildcrew | gstack |
-|---|-----------|--------|
-| Install | `npx buildcrew` | `git clone` + Bun + `./setup` |
-| Orchestration | Auto (constitution routes) | Manual (`/qa`, `/review`, ...) |
-| Harness | `init` + `add` + custom .md | Manual CLAUDE.md |
-| Dependencies | None | Bun, Playwright binary (~58MB) |
-| Browser testing | Playwright MCP | Custom Playwright daemon |
-| Pipeline docs | Auto-generated chain (01→07) | Per-skill output |
-| Agents | 11 (5 opus, 6 sonnet) | 34 |
-| Customization | Edit .md directly, never overwritten | May overwrite on update |
-
 ## License
 
 MIT

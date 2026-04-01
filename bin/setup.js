@@ -3,14 +3,13 @@
 import { readdir, copyFile, mkdir, readFile, writeFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { createInterface } from "readline";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AGENTS_SRC = join(__dirname, "..", "agents");
 const TEMPLATES_SRC = join(__dirname, "..", "templates");
 const TARGET_DIR = join(process.cwd(), ".claude", "agents");
 const HARNESS_DIR = join(process.cwd(), ".claude", "harness");
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
@@ -41,42 +40,261 @@ const TEMPLATES = {
   "env-vars":      { file: "env-vars.md",       desc: "Environment variables & secrets guide",      category: "system" },
 };
 
-// ─── Interactive prompt ───
-
-function createPrompt() {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q) => new Promise(resolve => rl.question(q, resolve));
-  const close = () => rl.close();
-  return { ask, close };
-}
-
-// ─── Auto-detect project info ───
+// ─── Deep auto-detect ───
 
 async function detectProject() {
-  const info = { name: "", stack: [], framework: "", hasTS: false, hasTailwind: false, hasI18n: false, hasAuth: false, hasDB: false };
+  const info = {
+    name: "", description: "", stack: [], framework: "",
+    hasTS: false, hasTailwind: false, hasI18n: false, hasAuth: false, hasDB: false,
+    hasPayments: false, hasAI: false, deploy: "", dbName: "", authName: "", paymentName: "",
+    components: [], apiRoutes: [], locales: [],
+  };
+
+  // package.json
   try {
     const pkg = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8"));
     info.name = pkg.name || "";
+    info.description = pkg.description || "";
     const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+    // Framework
     if (allDeps["next"]) { info.framework = "Next.js"; info.stack.push("Next.js"); }
     else if (allDeps["nuxt"]) { info.framework = "Nuxt"; info.stack.push("Nuxt"); }
     else if (allDeps["react"]) { info.framework = "React"; info.stack.push("React"); }
     else if (allDeps["vue"]) { info.framework = "Vue"; info.stack.push("Vue"); }
     else if (allDeps["svelte"] || allDeps["@sveltejs/kit"]) { info.framework = "SvelteKit"; info.stack.push("SvelteKit"); }
     else if (allDeps["express"]) { info.framework = "Express"; info.stack.push("Express"); }
+
+    // Core
     if (allDeps["typescript"]) { info.hasTS = true; info.stack.push("TypeScript"); }
     if (allDeps["tailwindcss"]) { info.hasTailwind = true; info.stack.push("TailwindCSS"); }
-    if (allDeps["next-intl"] || allDeps["i18next"] || allDeps["react-intl"]) { info.hasI18n = true; info.stack.push("i18n"); }
-    if (allDeps["@supabase/supabase-js"]) { info.hasDB = true; info.stack.push("Supabase"); }
-    else if (allDeps["prisma"] || allDeps["@prisma/client"]) { info.hasDB = true; info.stack.push("Prisma"); }
-    else if (allDeps["drizzle-orm"]) { info.hasDB = true; info.stack.push("Drizzle"); }
-    if (allDeps["next-auth"] || allDeps["@auth/core"] || allDeps["@supabase/auth-helpers-nextjs"]) { info.hasAuth = true; info.stack.push("Auth"); }
-    if (allDeps["stripe"] || allDeps["@paddle/paddle-js"]) { info.stack.push("Payments"); }
+    if (allDeps["framer-motion"]) info.stack.push("Framer Motion");
+
+    // i18n
+    if (allDeps["next-intl"] || allDeps["i18next"] || allDeps["react-intl"] || allDeps["next-i18next"]) {
+      info.hasI18n = true; info.stack.push("i18n");
+    }
+
+    // DB
+    if (allDeps["@supabase/supabase-js"]) { info.hasDB = true; info.dbName = "Supabase"; info.stack.push("Supabase"); }
+    else if (allDeps["prisma"] || allDeps["@prisma/client"]) { info.hasDB = true; info.dbName = "Prisma"; info.stack.push("Prisma"); }
+    else if (allDeps["drizzle-orm"]) { info.hasDB = true; info.dbName = "Drizzle"; info.stack.push("Drizzle"); }
+    else if (allDeps["mongoose"]) { info.hasDB = true; info.dbName = "MongoDB"; info.stack.push("MongoDB"); }
+
+    // Auth
+    if (allDeps["next-auth"] || allDeps["@auth/core"]) { info.hasAuth = true; info.authName = "NextAuth"; info.stack.push("NextAuth"); }
+    else if (allDeps["@supabase/auth-helpers-nextjs"] || allDeps["@supabase/ssr"]) { info.hasAuth = true; info.authName = "Supabase Auth"; info.stack.push("Supabase Auth"); }
+    else if (allDeps["firebase"]) { info.hasAuth = true; info.authName = "Firebase Auth"; info.stack.push("Firebase"); }
+
+    // Payments
+    if (allDeps["stripe"]) { info.hasPayments = true; info.paymentName = "Stripe"; info.stack.push("Stripe"); }
+    else if (allDeps["@paddle/paddle-js"]) { info.hasPayments = true; info.paymentName = "Paddle"; info.stack.push("Paddle"); }
+    else if (allDeps["@tosspayments/payment-sdk"]) { info.hasPayments = true; info.paymentName = "Toss Payments"; info.stack.push("Toss Payments"); }
+
+    // AI
+    if (allDeps["openai"]) { info.hasAI = true; info.stack.push("OpenAI"); }
+    else if (allDeps["@anthropic-ai/sdk"]) { info.hasAI = true; info.stack.push("Anthropic"); }
+    else if (allDeps["@google/generative-ai"]) { info.hasAI = true; info.stack.push("Google AI"); }
   } catch {}
+
+  // Detect deploy from vercel.json / netlify.toml / fly.toml
+  if (await exists(join(process.cwd(), "vercel.json")) || await exists(join(process.cwd(), ".vercel"))) info.deploy = "Vercel";
+  else if (await exists(join(process.cwd(), "netlify.toml"))) info.deploy = "Netlify";
+  else if (await exists(join(process.cwd(), "fly.toml"))) info.deploy = "Fly.io";
+  else if (await exists(join(process.cwd(), "Dockerfile"))) info.deploy = "Docker";
+
+  // Scan components
+  try {
+    const compsDir = join(process.cwd(), "src", "components");
+    if (await exists(compsDir)) {
+      const files = await readdir(compsDir);
+      info.components = files.filter(f => f.endsWith(".tsx") || f.endsWith(".vue") || f.endsWith(".svelte")).map(f => f.replace(/\.\w+$/, ""));
+    }
+  } catch {}
+
+  // Scan API routes
+  try {
+    const apiDir = join(process.cwd(), "src", "app", "api");
+    if (await exists(apiDir)) {
+      const scanDir = async (dir, prefix = "") => {
+        const entries = await readdir(dir, { withFileTypes: true });
+        const routes = [];
+        for (const e of entries) {
+          if (e.isDirectory()) routes.push(...await scanDir(join(dir, e.name), `${prefix}/${e.name}`));
+          else if (e.name === "route.ts" || e.name === "route.js") routes.push(prefix || "/");
+        }
+        return routes;
+      };
+      info.apiRoutes = await scanDir(apiDir);
+    }
+  } catch {}
+
+  // Scan i18n locales
+  try {
+    for (const localeDir of ["src/i18n/dictionaries", "src/locales", "locales", "messages", "public/locales"]) {
+      const dir = join(process.cwd(), localeDir);
+      if (await exists(dir)) {
+        const files = await readdir(dir);
+        info.locales = files.filter(f => f.endsWith(".json")).map(f => f.replace(".json", ""));
+        break;
+      }
+    }
+  } catch {}
+
   return info;
 }
 
-// ─── Add: copy template to harness ───
+// ─── Init: Zero-question harness generation ───
+
+async function runInit(force) {
+  log(`\n  ${BOLD}buildcrew init${RESET} v${VERSION}\n`);
+
+  if ((await exists(join(HARNESS_DIR, "project.md"))) && !force) {
+    log(`  ${YELLOW}Harness already exists at .claude/harness/${RESET}`);
+    log(`  ${DIM}Use ${BOLD}--force${RESET}${DIM} to regenerate. Or just edit the files directly.${RESET}\n`);
+    return;
+  }
+
+  log(`  ${DIM}Scanning project...${RESET}\n`);
+  const d = await detectProject();
+
+  await mkdir(HARNESS_DIR, { recursive: true });
+
+  // ─── project.md ───
+  const projectMd = `# Project: ${d.name || "my-project"}
+
+## Overview
+${d.description || "<!-- Describe what this project does in 1-2 sentences -->"}
+
+## Tech Stack
+${d.stack.map(s => `- ${s}`).join("\n") || "<!-- Add your tech stack -->"}
+
+## Framework
+${d.framework || "<!-- Not detected -->"}
+
+## Infrastructure
+- **Deploy**: ${d.deploy || "<!-- Vercel / AWS / Netlify / etc. -->"}
+- **Production URL**: <!-- https://your-app.com -->
+- **TypeScript**: ${d.hasTS ? "Yes" : "No"}
+- **CSS**: ${d.hasTailwind ? "TailwindCSS" : "<!-- Your CSS solution -->"}
+- **i18n**: ${d.hasI18n ? `Yes (${d.locales.join(", ")})` : "No"}
+- **Auth**: ${d.hasAuth ? d.authName : "No"}
+- **Database**: ${d.hasDB ? d.dbName : "No"}
+- **Payments**: ${d.hasPayments ? d.paymentName : "No"}
+- **AI**: ${d.hasAI ? d.stack.find(s => ["OpenAI","Anthropic","Google AI"].includes(s)) || "Yes" : "No"}
+
+## Key Components
+${d.components.length > 0 ? d.components.map(c => `- ${c}`).join("\n") : "<!-- List your main components -->"}
+
+## API Routes
+${d.apiRoutes.length > 0 ? d.apiRoutes.map(r => `- \`/api${r}\``).join("\n") : "<!-- List your API endpoints -->"}
+
+## Domain
+- **Industry**: <!-- e.g., e-commerce, fintech, entertainment -->
+- **User types**: <!-- e.g., free users, premium users, admins -->
+
+## Key Domain Terms
+<!-- Define project-specific terms so agents use consistent language -->
+<!-- - term = definition -->
+
+## Business Rules
+<!-- Rules that affect feature development -->
+<!-- - Free users: 3 actions per day -->
+<!-- - Premium: unlimited access -->
+`;
+
+  // ─── rules.md ───
+  const rulesMd = `# Team Rules
+
+All agents read this before every task. Edit freely.
+
+## Coding Conventions
+${d.framework === "Next.js" ? `- Use App Router patterns
+- Server components by default, "use client" only when needed
+- Functional components only` : "<!-- Add your coding conventions -->"}
+${d.hasTS ? "- Strict TypeScript — no \`any\` types" : ""}
+${d.hasTailwind ? "- Use TailwindCSS utility classes, avoid custom CSS" : ""}
+- No \`console.log\` in production code
+- No default exports (except pages/layouts)
+
+## Priorities
+- UX over premature optimization
+- Mobile-first responsive design
+${d.hasI18n ? `- i18n: all user-facing text must be in locale files (${d.locales.join(", ")})` : ""}
+${d.hasPayments ? "- Payment security: amounts validated server-side only" : ""}
+
+## What to Avoid
+- Class components
+- \`any\` type assertions
+- Inline styles (use Tailwind or CSS modules)
+- Hardcoded strings in UI (use i18n)
+- Direct DB access from client components
+
+## Quality Standards
+${d.hasTS ? "- \`npx tsc --noEmit\` must pass" : ""}
+- \`npm run lint\` must pass
+- \`npm run build\` must pass
+${d.hasI18n && d.locales.length > 0 ? `- All ${d.locales.length} locale files must be in sync` : ""}
+- No unused imports or variables
+
+## Review Standards
+${d.hasAuth ? "- All API routes must check authentication" : ""}
+${d.hasPayments ? "- Payment mutations must be server-side and atomic" : ""}
+${d.hasAI ? "- AI-generated content treated as untrusted (sanitize before render)" : ""}
+- Check for XSS on any user input rendering
+- Verify responsive layout at 375px, 768px, 1440px
+`;
+
+  await writeFile(join(HARNESS_DIR, "project.md"), projectMd);
+  await writeFile(join(HARNESS_DIR, "rules.md"), rulesMd);
+
+  // Auto-add relevant templates
+  let templateCount = 0;
+  const autoTemplates = [];
+  if (d.hasDB) autoTemplates.push("erd");
+  if (d.apiRoutes.length > 0) autoTemplates.push("api-spec");
+  if (d.hasTailwind) autoTemplates.push("design-system");
+  if (d.hasI18n || d.components.length > 5) autoTemplates.push("user-flow");
+  autoTemplates.push("architecture");
+
+  for (const name of autoTemplates) {
+    const t = TEMPLATES[name];
+    if (t && t.file) {
+      await copyFile(join(TEMPLATES_SRC, t.file), join(HARNESS_DIR, `${name}.md`));
+      templateCount++;
+    }
+  }
+
+  // Print results
+  log(`  ${GREEN}${BOLD}Harness generated!${RESET} (${2 + templateCount} files)\n`);
+  log(`  ${GREEN} + ${RESET} project.md       ${DIM}auto-detected from package.json${RESET}`);
+  log(`  ${GREEN} + ${RESET} rules.md         ${DIM}smart defaults for ${d.framework || "your stack"}${RESET}`);
+  for (const name of autoTemplates) {
+    log(`  ${GREEN} + ${RESET} ${(name + ".md").padEnd(17)}${DIM}${TEMPLATES[name].desc}${RESET}`);
+  }
+
+  // Show what was detected
+  log(`\n  ${BOLD}Detected:${RESET}`);
+  if (d.stack.length > 0) log(`  ${CYAN}Stack${RESET}       ${d.stack.join(", ")}`);
+  if (d.deploy) log(`  ${CYAN}Deploy${RESET}      ${d.deploy}`);
+  if (d.components.length > 0) log(`  ${CYAN}Components${RESET}  ${d.components.length} found`);
+  if (d.apiRoutes.length > 0) log(`  ${CYAN}API Routes${RESET}  ${d.apiRoutes.length} found`);
+  if (d.locales.length > 0) log(`  ${CYAN}Locales${RESET}     ${d.locales.join(", ")}`);
+
+  // Available extras
+  const remaining = Object.entries(TEMPLATES).filter(([name, t]) => t.file && !autoTemplates.includes(name));
+  if (remaining.length > 0) {
+    log(`\n  ${BOLD}Add more:${RESET}`);
+    for (const [name, t] of remaining) {
+      log(`  ${DIM}npx buildcrew add ${CYAN}${name}${RESET}`);
+    }
+  }
+
+  log(`\n  ${BOLD}Next step:${RESET} Edit ${CYAN}.claude/harness/*.md${RESET} to fill in project-specific details.`);
+  log(`  ${DIM}Look for <!-- comments --> — those are the parts to customize.${RESET}\n`);
+}
+
+// ─── Add: copy template ───
 
 async function runAdd(type, force) {
   if (!type) {
@@ -93,8 +311,7 @@ async function runAdd(type, force) {
       }
       log("");
     }
-    log(`  ${BOLD}Usage:${RESET} npx buildcrew add ${CYAN}<template>${RESET}`);
-    log(`  ${BOLD}Example:${RESET} npx buildcrew add erd\n`);
+    log(`  ${BOLD}Usage:${RESET} npx buildcrew add ${CYAN}<template>${RESET}\n`);
     return;
   }
 
@@ -106,8 +323,7 @@ async function runAdd(type, force) {
   }
 
   if (!template.file) {
-    log(`\n  ${YELLOW}${type}.md is auto-generated by ${BOLD}npx buildcrew init${RESET}`);
-    log(`  ${DIM}Run init to create it, or create .claude/harness/${type}.md manually.${RESET}\n`);
+    log(`\n  ${YELLOW}${type}.md is auto-generated by ${BOLD}npx buildcrew init${RESET}\n`);
     return;
   }
 
@@ -120,167 +336,34 @@ async function runAdd(type, force) {
   await mkdir(HARNESS_DIR, { recursive: true });
   await copyFile(join(TEMPLATES_SRC, template.file), target);
   log(`\n  ${GREEN} + ${RESET} .claude/harness/${type}.md`);
-  log(`  ${DIM}Edit this file to fill in your project details.${RESET}`);
-  log(`  ${DIM}All agents will read it automatically.${RESET}\n`);
-}
-
-// ─── Init: Harness Engineering ───
-
-async function runInit(force) {
-  log(`\n  ${BOLD}buildcrew init${RESET} — Harness Engineering Setup\n`);
-  log(`  ${DIM}Setting up project context and team rules.${RESET}`);
-  log(`  ${DIM}All 11 agents will read these before every task.${RESET}\n`);
-
-  if ((await exists(join(HARNESS_DIR, "project.md"))) && !force) {
-    log(`  ${YELLOW}Harness already exists at .claude/harness/${RESET}`);
-    log(`  ${DIM}Use ${BOLD}npx buildcrew init --force${RESET}${DIM} to overwrite.${RESET}\n`);
-    return;
-  }
-
-  const detected = await detectProject();
-  const { ask, close } = createPrompt();
-
-  try {
-    log(`  ${CYAN}${BOLD}[1/3] Project Context${RESET}\n`);
-    const name = (await ask(`  ${BOLD}Project name${RESET} ${DIM}(${detected.name || "none"})${RESET}: `)) || detected.name || "my-project";
-    const description = await ask(`  ${BOLD}What does this project do?${RESET} (1 sentence): `);
-    const stackAuto = detected.stack.length > 0 ? detected.stack.join(", ") : "not detected";
-    const stackExtra = await ask(`  ${BOLD}Tech stack${RESET} ${DIM}(detected: ${stackAuto})${RESET}\n  ${DIM}Add anything missing (comma-separated, or Enter):${RESET} `);
-    const deployTarget = await ask(`  ${BOLD}Deploy target${RESET} ${DIM}(Vercel, AWS, etc.)${RESET}: `);
-    const prodUrl = await ask(`  ${BOLD}Production URL${RESET} ${DIM}(or Enter to skip)${RESET}: `);
-
-    log(`\n  ${CYAN}${BOLD}[2/3] Team Rules${RESET}\n`);
-    const conventions = await ask(`  ${BOLD}Coding conventions${RESET}\n  ${DIM}(e.g., "functional components only, no default exports")${RESET}\n  : `);
-    const priorities = await ask(`  ${BOLD}What to prioritize${RESET}\n  ${DIM}(e.g., "UX over performance, security first")${RESET}\n  : `);
-    const avoid = await ask(`  ${BOLD}What to avoid${RESET}\n  ${DIM}(e.g., "no class components, no any types")${RESET}\n  : `);
-    const quality = await ask(`  ${BOLD}Quality standards${RESET}\n  ${DIM}(e.g., "all code must pass tsc, no console.log")${RESET}\n  : `);
-    const reviewRules = await ask(`  ${BOLD}Review rules${RESET}\n  ${DIM}(e.g., "always check auth on API routes, mobile-first")${RESET}\n  : `);
-
-    log(`\n  ${CYAN}${BOLD}[3/3] Domain Knowledge${RESET}\n`);
-    const domain = await ask(`  ${BOLD}Domain${RESET} ${DIM}(e.g., "e-commerce", "fintech")${RESET}: `);
-    const userTypes = await ask(`  ${BOLD}User types${RESET} ${DIM}(e.g., "free, premium, admin")${RESET}: `);
-    const keyTerms = await ask(`  ${BOLD}Key terms${RESET}\n  ${DIM}(e.g., "reading=tarot session, spread=card layout")${RESET}\n  : `);
-    const businessRules = await ask(`  ${BOLD}Business rules${RESET}\n  ${DIM}(e.g., "free=3 reads/day, premium=unlimited")${RESET}\n  : `);
-
-    close();
-
-    await mkdir(HARNESS_DIR, { recursive: true });
-    const fullStack = [...detected.stack, ...(stackExtra ? stackExtra.split(",").map(s => s.trim()) : [])].filter(Boolean);
-
-    const projectMd = `# Project: ${name}
-
-## Overview
-${description || "[Edit: describe your project]"}
-
-## Tech Stack
-${fullStack.map(s => `- ${s}`).join("\n") || "- [Edit: add your tech stack]"}
-
-## Framework
-${detected.framework || "[Not detected]"}
-
-## Infrastructure
-- **Deploy**: ${deployTarget || "[Edit]"}
-- **Production URL**: ${prodUrl || "[Edit]"}
-- **TypeScript**: ${detected.hasTS ? "Yes" : "No"}
-- **CSS**: ${detected.hasTailwind ? "TailwindCSS" : "[Edit]"}
-- **i18n**: ${detected.hasI18n ? "Yes" : "No"}
-- **Auth**: ${detected.hasAuth ? "Yes" : "No"}
-- **Database**: ${detected.hasDB ? "Yes" : "No"}
-
-## Domain
-- **Industry**: ${domain || "[Edit]"}
-- **User types**: ${userTypes || "[Edit]"}
-
-## Key Domain Terms
-${keyTerms ? keyTerms.split(",").map(t => `- ${t.trim()}`).join("\n") : "- [Edit: add domain-specific terms]"}
-
-## Business Rules
-${businessRules ? businessRules.split(",").map(r => `- ${r.trim()}`).join("\n") : "- [Edit: add business rules]"}
-`;
-
-    const rulesMd = `# Team Rules
-
-These rules apply to ALL agents. Every agent reads this before starting work.
-
-## Coding Conventions
-${conventions ? conventions.split(",").map(c => `- ${c.trim()}`).join("\n") : "- Follow existing codebase patterns"}
-
-## Priorities
-${priorities ? priorities.split(",").map(p => `- ${p.trim()}`).join("\n") : "- [Edit: set your priorities]"}
-
-## What to Avoid
-${avoid ? avoid.split(",").map(a => `- ${a.trim()}`).join("\n") : "- [Edit: list things to avoid]"}
-
-## Quality Standards
-${quality ? quality.split(",").map(q => `- ${q.trim()}`).join("\n") : "- All code must pass type checker and linter\n- No debug logs in production"}
-
-## Review Standards
-${reviewRules ? reviewRules.split(",").map(r => `- ${r.trim()}`).join("\n") : "- [Edit: add review rules]"}
-`;
-
-    await writeFile(join(HARNESS_DIR, "project.md"), projectMd);
-    await writeFile(join(HARNESS_DIR, "rules.md"), rulesMd);
-
-    log(`\n  ${GREEN}${BOLD}Harness created!${RESET}\n`);
-    log(`  ${GREEN} + ${RESET} .claude/harness/project.md`);
-    log(`  ${GREEN} + ${RESET} .claude/harness/rules.md`);
-
-    // Suggest additional templates
-    log(`\n  ${BOLD}Add more context with templates:${RESET}\n`);
-    const suggestions = [
-      ["erd",           "Database schema & relationships"],
-      ["architecture",  "System architecture overview"],
-      ["api-spec",      "API endpoints & contracts"],
-      ["design-system", "Colors, typography, components"],
-      ["glossary",      "Domain terms & user roles"],
-      ["user-flow",     "User journeys & page map"],
-      ["env-vars",      "Environment variables guide"],
-    ];
-    for (const [name, desc] of suggestions) {
-      log(`  ${DIM}npx buildcrew add ${CYAN}${name.padEnd(15)}${RESET} ${DIM}${desc}${RESET}`);
-    }
-
-    log(`\n  ${DIM}Or create any .md file in .claude/harness/ — agents read them all.${RESET}\n`);
-
-    if (!(await exists(TARGET_DIR))) {
-      log(`  ${YELLOW}Agents not installed yet.${RESET} Run ${BOLD}npx buildcrew${RESET} first.\n`);
-    }
-
-  } catch (err) {
-    close();
-    throw err;
-  }
+  log(`  ${DIM}Edit to fill in your project details. Agents read it automatically.${RESET}\n`);
 }
 
 // ─── Harness status ───
 
 async function runHarnessStatus() {
-  log(`\n  ${BOLD}Harness files${RESET} ${DIM}(.claude/harness/)${RESET}\n`);
+  log(`\n  ${BOLD}Harness${RESET} ${DIM}(.claude/harness/)${RESET}\n`);
 
   if (!(await exists(HARNESS_DIR))) {
-    log(`  ${YELLOW}No harness directory found.${RESET}`);
-    log(`  ${DIM}Run ${BOLD}npx buildcrew init${RESET}${DIM} to get started.${RESET}\n`);
+    log(`  ${YELLOW}No harness found.${RESET} Run ${BOLD}npx buildcrew init${RESET}\n`);
     return;
   }
 
   const files = (await readdir(HARNESS_DIR)).filter(f => f.endsWith(".md")).sort();
-  if (files.length === 0) {
-    log(`  ${YELLOW}Harness directory is empty.${RESET}\n`);
-    return;
-  }
+  if (files.length === 0) { log(`  ${YELLOW}Empty.${RESET}\n`); return; }
 
   for (const file of files) {
     const name = file.replace(".md", "");
-    const isTemplate = TEMPLATES[name];
     const content = await readFile(join(HARNESS_DIR, file), "utf8");
     const lines = content.split("\n").length;
-    const hasEdits = !content.includes("[Edit");
-    const status = hasEdits ? `${GREEN}configured${RESET}` : `${YELLOW}needs editing${RESET}`;
-    const desc = isTemplate ? `${DIM}${isTemplate.desc}${RESET}` : `${DIM}(custom)${RESET}`;
-    log(`  ${BOLD}${name.padEnd(16)}${RESET} ${status}  ${lines} lines  ${desc}`);
+    const hasComments = content.includes("<!--");
+    const status = hasComments ? `${YELLOW}needs editing${RESET}` : `${GREEN}configured${RESET}`;
+    const t = TEMPLATES[name];
+    const desc = t ? `${DIM}${t.desc}${RESET}` : `${DIM}(custom)${RESET}`;
+    log(`  ${BOLD}${name.padEnd(16)}${RESET} ${status}  ${DIM}${lines} lines${RESET}  ${desc}`);
   }
 
-  log(`\n  ${DIM}Agents read ALL .md files here. Add any file you want.${RESET}\n`);
+  log(`\n  ${DIM}Edit files to replace <!-- comments --> with your content.${RESET}\n`);
 }
 
 // ─── Install agents ───
@@ -288,78 +371,48 @@ async function runHarnessStatus() {
 async function runInstall(force) {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
   log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}11 AI agents for Claude Code${RESET}\n`);
-  log(`${DIM}  Installing to ${TARGET_DIR}${RESET}\n`);
 
   await mkdir(TARGET_DIR, { recursive: true });
   let installed = 0, skipped = 0;
 
   for (const file of files) {
     const target = join(TARGET_DIR, file);
-    if ((await exists(target)) && !force) {
-      log(`  ${YELLOW}skip${RESET}  ${file} ${DIM}(exists, use --force)${RESET}`);
-      skipped++;
-      continue;
-    }
+    if ((await exists(target)) && !force) { skipped++; continue; }
     await copyFile(join(AGENTS_SRC, file), target);
-    log(`  ${GREEN} +  ${RESET} ${file}`);
+    log(`  ${GREEN} + ${RESET} ${file}`);
     installed++;
   }
 
   log("");
-  if (installed > 0) {
-    log(`  ${GREEN}${BOLD}Done!${RESET} ${installed} agents installed.${skipped > 0 ? ` ${skipped} skipped.` : ""}\n`);
-  } else {
-    log(`  ${YELLOW}All agents already exist.${RESET} Use ${BOLD}--force${RESET} to overwrite.\n`);
+  if (installed > 0) log(`  ${GREEN}${BOLD}Done!${RESET} ${installed} agents installed.${skipped > 0 ? ` ${skipped} skipped.` : ""}\n`);
+  else log(`  ${YELLOW}All agents already exist.${RESET} Use ${BOLD}--force${RESET} to overwrite.\n`);
+
+  if (!(await exists(join(HARNESS_DIR, "project.md")))) {
+    log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
   }
 
-  const hasHarness = await exists(join(HARNESS_DIR, "project.md"));
-  if (!hasHarness) {
-    log(`  ${CYAN}Next:${RESET} Run ${BOLD}npx buildcrew init${RESET} to set up your project harness.\n`);
-  }
-
-  let hasPlaywright = false;
-  try {
-    const settingsPath = join(process.env.HOME, ".claude", "settings.json");
-    if (await exists(settingsPath)) {
-      hasPlaywright = (await readFile(settingsPath, "utf8")).includes("playwright");
-    }
-  } catch {}
-  if (!hasPlaywright) {
-    log(`  ${YELLOW}Optional:${RESET} Playwright MCP not detected.`);
-    log(`  ${DIM}Setup: claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
-  }
-
-  log(`  ${BOLD}Quick start:${RESET}  @constitution [your request]\n`);
+  log(`  ${BOLD}Start:${RESET}  @constitution [your request]\n`);
 }
 
-// ─── List agents ───
+// ─── List / Uninstall ───
 
 async function runList() {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
   log(`\n  ${BOLD}buildcrew${RESET} v${VERSION} — 11 agents\n`);
   for (const file of files) {
     const content = await readFile(join(AGENTS_SRC, file), "utf8");
-    const nameMatch = content.match(/^name:\s*(.+)$/m);
-    const descMatch = content.match(/^description:\s*(.+)$/m);
-    const modelMatch = content.match(/^model:\s*(.+)$/m);
-    const name = nameMatch ? nameMatch[1] : file.replace(".md", "");
-    const desc = descMatch ? descMatch[1] : "";
-    const model = modelMatch ? modelMatch[1] : "sonnet";
+    const name = (content.match(/^name:\s*(.+)$/m) || [])[1] || file.replace(".md", "");
+    const desc = (content.match(/^description:\s*(.+)$/m) || [])[1] || "";
+    const model = (content.match(/^model:\s*(.+)$/m) || [])[1] || "sonnet";
     const modelTag = model === "opus" ? `${MAGENTA}opus${RESET}` : `${DIM}sonnet${RESET}`;
-    const color = name === "constitution" ? BOLD : "";
-    log(`  ${color}${name.padEnd(20)}${RESET} ${modelTag}  ${DIM}${desc.slice(0, 55)}${RESET}`);
+    log(`  ${name === "constitution" ? BOLD : ""}${name.padEnd(20)}${RESET} ${modelTag}  ${DIM}${desc.slice(0, 55)}${RESET}`);
   }
   log("");
 }
 
-// ─── Uninstall ───
-
 async function runUninstall() {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
-  if (!(await exists(TARGET_DIR))) {
-    log(`${YELLOW}No .claude/agents/ directory found.${RESET}`);
-    return;
-  }
+  if (!(await exists(TARGET_DIR))) { log(`${YELLOW}No agents found.${RESET}`); return; }
   let removed = 0;
   for (const file of files) {
     const target = join(TARGET_DIR, file);
@@ -376,38 +429,30 @@ async function main() {
   const subcommand = args[1];
   const force = args.includes("--force") || args.includes("-f");
 
-  if (args.includes("--version") || args.includes("-v")) {
-    log(`buildcrew v${VERSION}`);
-    return;
-  }
+  if (args.includes("--version") || args.includes("-v")) { log(`buildcrew v${VERSION}`); return; }
 
   if (args.includes("--help") || args.includes("-h")) {
     log(`
   ${BOLD}buildcrew${RESET} v${VERSION} — 11 AI agents for Claude Code
 
   ${BOLD}Commands:${RESET}
-    npx buildcrew                Install agents
-    npx buildcrew init           Set up project harness (interactive)
-    npx buildcrew add            List available harness templates
-    npx buildcrew add <template> Add a harness template
-    npx buildcrew harness        Show harness status
+    npx buildcrew              Install agents
+    npx buildcrew init         Auto-generate project harness (zero questions)
+    npx buildcrew add          List harness templates
+    npx buildcrew add <name>   Add a harness template
+    npx buildcrew harness      Show harness file status
 
   ${BOLD}Options:${RESET}
-    --force, -f      Overwrite existing files
-    --list, -l       List all agents
-    --uninstall      Remove installed agents
-    --version, -v    Show version
+    --force, -f    Overwrite existing files
+    --list, -l     List all agents
+    --uninstall    Remove agents
+    --version      Show version
 
-  ${BOLD}Setup (recommended):${RESET}
-    ${GREEN}1.${RESET} npx buildcrew              ${DIM}Install agent files${RESET}
-    ${GREEN}2.${RESET} npx buildcrew init         ${DIM}Project context + team rules${RESET}
-    ${GREEN}3.${RESET} npx buildcrew add erd      ${DIM}Add more context (optional)${RESET}
-    ${GREEN}4.${RESET} @constitution [task]       ${DIM}Start working${RESET}
-
-  ${BOLD}Harness templates:${RESET}
-    erd, architecture, api-spec, design-system,
-    glossary, user-flow, env-vars
-    ${DIM}Or create any .md file in .claude/harness/${RESET}
+  ${BOLD}Setup:${RESET}
+    ${GREEN}1.${RESET} npx buildcrew          ${DIM}Install agents${RESET}
+    ${GREEN}2.${RESET} npx buildcrew init     ${DIM}Auto-generate harness from codebase${RESET}
+    ${GREEN}3.${RESET} Edit .claude/harness/   ${DIM}Customize (replace <!-- comments -->)${RESET}
+    ${GREEN}4.${RESET} @constitution [task]   ${DIM}Start working${RESET}
 
   ${BOLD}More info:${RESET} https://github.com/z1nun/buildcrew
 `);
