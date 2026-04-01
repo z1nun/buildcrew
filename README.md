@@ -1,100 +1,138 @@
-# claude-constitution
+# buildcrew
 
-11 specialized AI agents for Claude Code — auto-orchestrated team with 9 operating modes.
+11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes.
 
-One command installs a virtual engineering team into any project.
-
-## Install
+One command. A full engineering team in your project.
 
 ```bash
-npx claude-constitution
+npx buildcrew
 ```
 
-This copies 11 agent files to `.claude/agents/` in your project.
+## What It Does
+
+`buildcrew` installs 11 specialized AI agent definitions into your project's `.claude/agents/` directory. A **constitution** agent orchestrates them all — just describe what you need, and it routes to the right agents automatically.
+
+```
+You:   @constitution Add a user dashboard
+Crew:  Planner → Designer → Developer → QA → Browser QA → Reviewer → ✅
+```
+
+No external dependencies. No runtime. Just Markdown files that Claude Code understands.
 
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI
-- [Playwright MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/playwright) (for browser-qa and canary-monitor)
+- [Playwright MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/playwright) _(optional, for browser-qa & canary-monitor)_
+
+```bash
+# Optional: enable real browser testing
+claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright
+```
 
 ## Agents
 
 ### Build Team
-| Agent | Role |
-|-------|------|
-| `planner` | Requirements, user stories, acceptance criteria |
-| `designer` | UI/UX specs + HTML/CSS prototypes |
-| `developer` | Implementation |
+| Agent | What it does |
+|-------|-------------|
+| **planner** | Requirements, user stories, acceptance criteria |
+| **designer** | UI/UX specs + working HTML/CSS prototypes |
+| **developer** | Implementation following plan & design |
 
 ### Quality Team
-| Agent | Role |
-|-------|------|
-| `qa-tester` | Code-level verification (types, lint, build) |
-| `browser-qa` | Real browser testing via Playwright MCP |
-| `reviewer` | Multi-specialist code review + auto-fix |
-| `health-checker` | Code quality dashboard (0-10 score) |
+| Agent | What it does |
+|-------|-------------|
+| **qa-tester** | Code-level verification — types, lint, build |
+| **browser-qa** | Real browser testing via Playwright MCP |
+| **reviewer** | Multi-specialist code review (security, perf, testing, maintainability) + auto-fix |
+| **health-checker** | Code quality dashboard — weighted 0-10 score |
 
 ### Security & Ops
-| Agent | Role |
-|-------|------|
-| `security-auditor` | OWASP Top 10 + STRIDE threat model |
-| `canary-monitor` | Post-deploy production health |
-| `shipper` | Release pipeline (test → version → PR) |
+| Agent | What it does |
+|-------|-------------|
+| **security-auditor** | OWASP Top 10 + STRIDE threat model |
+| **canary-monitor** | Post-deploy production health check |
+| **shipper** | Release pipeline — test → version → changelog → PR |
 
 ### Specialist
-| Agent | Role |
-|-------|------|
-| `investigator` | Root cause debugging (4-phase, edit-frozen) |
+| Agent | What it does |
+|-------|-------------|
+| **investigator** | Root cause debugging — 4-phase, edit-frozen |
 
 ## 9 Operating Modes
 
-All orchestrated by `constitution` — just describe what you need and it routes to the right agents.
+Just talk to `@constitution` naturally. It auto-detects the mode.
 
-```
-@constitution Add user dashboard          → Feature Mode (Plan→Design→Dev→QA→BrowserQA→Review)
-@constitution full project audit          → Audit Mode (Scan→Prioritize→Fix→Verify)
-@constitution browser qa localhost:3000   → Browser QA Mode (Playwright testing)
-@constitution security audit              → Security Mode (OWASP + STRIDE)
-@constitution debug: login broken         → Debug Mode (4-phase investigation)
-@constitution health check                → Health Mode (quality dashboard)
-@constitution canary https://myapp.com    → Canary Mode (production monitoring)
-@constitution code review                 → Review Mode (multi-specialist)
-@constitution ship                        → Ship Mode (test→version→changelog→PR)
-```
+| Mode | Trigger | What happens |
+|------|---------|-------------|
+| **Feature** | _"Add user dashboard"_ | Plan → Design → Dev → QA → Browser QA → Review |
+| **Project Audit** | _"full project audit"_ | Scan → Prioritize → Fix → Verify |
+| **Browser QA** | _"browser qa localhost:3000"_ | Playwright tests all flows, responsive, console |
+| **Security** | _"security audit"_ | OWASP + STRIDE + secrets + dependency scan |
+| **Debug** | _"debug: login broken"_ | 4-phase root cause investigation |
+| **Health** | _"health check"_ | Quality dashboard (types, lint, build, deps, i18n) |
+| **Canary** | _"canary https://myapp.com"_ | Post-deploy production monitoring |
+| **Review** | _"code review"_ | Multi-specialist analysis + adversarial + auto-fix |
+| **Ship** | _"ship"_ | Test → version bump → changelog → PR |
 
 ## Feature Pipeline
 
-Each feature generates a full document chain:
+Each feature generates a full document chain in `.claude/pipeline/`:
 
 ```
-.claude/pipeline/{feature}/
-├── 01-plan.md           Planner output
-├── 02-design.md         Designer spec
-├── 02-prototype.html    Working HTML prototype
-├── 03-dev-notes.md      Developer output
-├── 04-qa-report.md      QA verification
-├── 05-browser-qa.md     Browser test results
-├── 06-review.md         Code review findings
-└── 07-ship.md           Release report + PR URL
+01-plan.md           Planner output
+02-design.md         Designer spec
+02-prototype.html    Working HTML prototype (open in browser!)
+03-dev-notes.md      Developer output
+04-qa-report.md      QA verification
+05-browser-qa.md     Browser test results + health score
+06-review.md         Code review findings + auto-fixes
+07-ship.md           Release report + PR URL
 ```
 
-## CLI Options
+## CLI
 
 ```bash
-npx claude-constitution              # Install agents
-npx claude-constitution --force      # Overwrite existing
-npx claude-constitution --list       # List agents
-npx claude-constitution --uninstall  # Remove agents
-npx claude-constitution --help       # Help
+npx buildcrew              # Install agents
+npx buildcrew --force      # Overwrite existing
+npx buildcrew --list       # List all agents
+npx buildcrew --uninstall  # Remove agents
+npx buildcrew --version    # Show version
+npx buildcrew --help       # Help
 ```
 
 ## How It Works
 
-- Each agent is a `.md` file in `.claude/agents/` that Claude Code reads as instructions
-- `constitution.md` orchestrates all agents, auto-detecting the mode from your request
-- Agents hand off to each other via structured documents in `.claude/pipeline/`
-- Quality gates route back to the right agent when issues are found
-- No external dependencies — just Markdown files that Claude Code understands
+1. Agent files are Markdown (`.md`) with YAML frontmatter
+2. Claude Code reads them from `.claude/agents/` as agent definitions
+3. `constitution.md` is the orchestrator — it reads your message, picks the mode, dispatches agents
+4. Agents hand off via structured documents in `.claude/pipeline/`
+5. Quality gates route back when issues are found
+6. No binaries, no runtime, no config — just Markdown
+
+## Customization
+
+Every agent is a Markdown file. Edit them to fit your project:
+
+```bash
+# After install, agents live here:
+.claude/agents/
+├── constitution.md      # Edit modes, triggers, team rules
+├── designer.md          # Edit design system, prototype template
+├── security-auditor.md  # Add project-specific security checks
+└── ...
+```
+
+## Compared to gstack
+
+| | buildcrew | gstack |
+|---|-----------|--------|
+| **Install** | `npx buildcrew` | `git clone` + Bun + `./setup` |
+| **Orchestration** | Auto (constitution routes) | Manual (`/qa`, `/review`, ...) |
+| **Dependencies** | None | Bun, Playwright binary (~58MB) |
+| **Browser testing** | Playwright MCP | Custom Playwright daemon |
+| **Pipeline docs** | Auto-generated chain (01-07) | Per-skill output (no chain) |
+| **Agents** | 11 | 34 |
+| **Customization** | Edit .md directly | Edit .md (may be overwritten on update) |
 
 ## License
 

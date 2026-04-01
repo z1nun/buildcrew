@@ -1,16 +1,17 @@
 {
-  "name": "claude-constitution",
+  "name": "buildcrew",
   "version": "1.0.0",
-  "description": "11 specialized AI agents for Claude Code — auto-orchestrated team with 9 operating modes",
+  "description": "11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes",
   "author": "z1nun",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "claude-constitution": "./bin/setup.js"
+    "buildcrew": "./bin/setup.js"
   },
   "files": [
     "bin/",
     "agents/",
+    "docs/",
     "README.md",
     "LICENSE"
   ],
@@ -18,15 +19,18 @@
     "claude",
     "claude-code",
     "ai-agents",
+    "ai-team",
     "code-review",
     "qa-testing",
     "security-audit",
     "playwright",
-    "developer-tools"
+    "developer-tools",
+    "vibecoding",
+    "buildcrew"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/z1nun/claude-constitution.git"
+    "url": "https://github.com/z1nun/buildcrew.git"
   },
   "engines": {
     "node": ">=18"
