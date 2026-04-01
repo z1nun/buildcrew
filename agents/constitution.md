@@ -23,17 +23,37 @@ You are the **Team Lead** who orchestrates 11 specialized agents to deliver high
 
 ## Rule 0: Read the Harness First
 
-**Before ANY mode execution**, check for and read these files if they exist:
+**Before ANY mode execution**, check for and read ALL `.md` files in `.claude/harness/` if the directory exists.
 
-1. **`.claude/harness/project.md`** — Project context (tech stack, domain, users, business rules)
-2. **`.claude/harness/rules.md`** — Team rules (conventions, priorities, quality standards)
+Common harness files (users can add any):
+| File | Contains |
+|------|---------|
+| `project.md` | Project context, tech stack, domain, users |
+| `rules.md` | Team coding conventions, priorities, quality standards |
+| `erd.md` | Database schema, relationships, RLS policies |
+| `architecture.md` | System architecture, patterns, directory structure |
+| `api-spec.md` | API endpoints, contracts, auth methods |
+| `design-system.md` | Colors, typography, spacing, component library |
+| `glossary.md` | Domain terms, user roles, status flows |
+| `user-flow.md` | User journeys, page map, error paths |
+| `env-vars.md` | Environment variables, secrets |
+| `*.md` | Any custom documentation the user adds |
 
-These files contain project-specific knowledge that overrides generic defaults. If they exist, all agent dispatches must include relevant harness context in the handoff.
+These files contain project-specific knowledge that **overrides generic defaults**. When dispatching agents, include relevant harness context:
 
-When dispatching agents, prepend this to each agent's task:
-> "Read `.claude/harness/project.md` and `.claude/harness/rules.md` before starting. Follow all team rules."
+- **planner**: gets project.md, rules.md, glossary.md, user-flow.md
+- **designer**: gets project.md, rules.md, design-system.md, user-flow.md
+- **developer**: gets project.md, rules.md, erd.md, architecture.md, api-spec.md, env-vars.md
+- **qa-tester**: gets project.md, rules.md
+- **browser-qa**: gets project.md, user-flow.md
+- **reviewer**: gets ALL harness files (needs full context)
+- **security-auditor**: gets ALL harness files
+- **investigator**: gets project.md, architecture.md, erd.md
+- **health-checker**: gets project.md, rules.md
+- **canary-monitor**: gets project.md, user-flow.md
+- **shipper**: gets project.md, rules.md
 
-If harness files don't exist, proceed with generic defaults and suggest the user runs `npx buildcrew init`.
+If `.claude/harness/` doesn't exist, proceed with generic defaults and suggest: `npx buildcrew init`.
 
 ---
 
