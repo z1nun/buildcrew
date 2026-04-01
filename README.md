@@ -2,8 +2,6 @@
 
 11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes.
 
-One command. A full engineering team in your project.
-
 ```bash
 npx buildcrew
 ```
@@ -16,8 +14,8 @@ AI coding agents are powerful, but without structure they produce inconsistent r
 
 - **A team** — 11 specialized agents, each with a clear role
 - **A process** — sequential pipeline with quality gates and iteration
-- **A harness** — your project context, rules, and domain knowledge baked into every agent's instructions
-- **An orchestrator** — just talk to `@constitution`, it routes to the right agents
+- **A harness** — your project context, rules, and domain knowledge baked in
+- **An orchestrator** — just talk to `@constitution`, it routes automatically
 
 ```
 You:   @constitution Add user authentication
@@ -30,134 +28,92 @@ No external dependencies. No runtime. No binaries. Just Markdown.
 
 ## Getting Started
 
-### Step 1: Install agents
-
 ```bash
+# 1. Install agents
 npx buildcrew
-```
 
-Copies 11 agent `.md` files to `.claude/agents/`.
-
-### Step 2: Set up your project harness
-
-```bash
+# 2. Set up project harness (interactive)
 npx buildcrew init
+
+# 3. Add more context (optional)
+npx buildcrew add erd
+npx buildcrew add architecture
+npx buildcrew add design-system
+
+# 4. Start working
+@constitution Add user dashboard
 ```
-
-Interactive setup that creates your project's **harness** — the context, rules, and domain knowledge that makes agents work for YOUR project specifically.
-
-```
-[1/3] Project Context
-  Project name: my-saas-app
-  What does this project do?: B2B analytics dashboard
-  Tech stack (detected: Next.js, TypeScript, TailwindCSS, Supabase)
-  Deploy target: Vercel
-  Production URL: https://app.example.com
-
-[2/3] Team Rules (Constitution)
-  Coding conventions: functional components only, no default exports
-  What to prioritize: UX over performance, ship fast
-  What to avoid: no any types, no lodash
-  Quality standards: all code must pass tsc, 100% i18n coverage
-  Review rules: always check auth on API routes, mobile-first
-
-[3/3] Domain Knowledge
-  Domain: B2B SaaS, analytics
-  User types: free users, pro users, team admins
-  Key domain terms: workspace=team account, widget=dashboard component
-  Business rules: free users limited to 3 widgets, pro gets unlimited
-```
-
-This creates the core harness files. Then add more context:
-
-```bash
-# Add templates for specific areas
-npx buildcrew add erd              # Database schema
-npx buildcrew add architecture     # System architecture
-npx buildcrew add api-spec         # API endpoints
-npx buildcrew add design-system    # Colors, typography, components
-npx buildcrew add glossary         # Domain terms & user roles
-npx buildcrew add user-flow        # User journeys & page map
-npx buildcrew add env-vars         # Environment variables
-
-# Or create any custom .md file
-echo "# My Custom Context" > .claude/harness/my-notes.md
-```
-
-Result:
-```
-.claude/harness/
-├── project.md        ← auto (init)
-├── rules.md          ← auto (init)
-├── erd.md            ← template (add)
-├── architecture.md   ← template (add)
-├── design-system.md  ← template (add)
-├── glossary.md       ← template (add)
-└── anything.md       ← custom (you create)
-```
-
-**Every agent reads these files before starting any task.** Add, edit, remove anytime.
-
-### Step 3: Start working
-
-```bash
-@constitution Add widget drag-and-drop reordering
-```
-
-That's it. Constitution detects the mode, dispatches agents, enforces your rules.
 
 ---
 
 ## Harness Engineering
 
-The harness is what makes buildcrew work for your project instead of producing generic code.
+The harness is what separates "generic AI output" from "code that fits your project."
 
-- **Without harness**: "Here's a React component" (generic)
-- **With harness**: "Here's a functional component using your design tokens, following your naming convention, with Korean i18n keys, tested against your business rules"
+```bash
+npx buildcrew init
+```
 
-### Harness file → Agent mapping
+Interactive setup creates core harness files:
 
-| File | Who reads it |
-|------|-------------|
-| `project.md` | All agents |
-| `rules.md` | All agents |
-| `erd.md` | developer, investigator, reviewer, security-auditor |
-| `architecture.md` | developer, investigator, reviewer |
-| `api-spec.md` | developer, reviewer, security-auditor |
-| `design-system.md` | designer |
-| `glossary.md` | planner, designer |
-| `user-flow.md` | planner, designer, browser-qa, canary-monitor |
-| `env-vars.md` | developer, security-auditor |
-| `*.md` (custom) | reviewer, security-auditor (read ALL) |
+```
+[1/3] Project Context
+  Project name, description, tech stack (auto-detected), deploy target, production URL
+
+[2/3] Team Rules
+  Coding conventions, priorities, what to avoid, quality standards, review rules
+
+[3/3] Domain Knowledge
+  Industry, user types, domain terms, business rules
+```
+
+### Add more context with templates
+
+```bash
+npx buildcrew add erd              # Database schema & relationships
+npx buildcrew add architecture     # System architecture overview
+npx buildcrew add api-spec         # API endpoints & contracts
+npx buildcrew add design-system    # Colors, typography, components
+npx buildcrew add glossary         # Domain terms & user roles
+npx buildcrew add user-flow        # User journeys & page map
+npx buildcrew add env-vars         # Environment variables guide
+```
 
 ### The harness is open
 
-You are **not limited to templates**. Create any `.md` file in `.claude/harness/`:
+Not limited to templates. Create any `.md` file in `.claude/harness/`:
 
-```bash
-# Custom files — agents read them all
-.claude/harness/competitor-analysis.md
-.claude/harness/meeting-notes.md
-.claude/harness/tech-debt-list.md
-.claude/harness/onboarding-guide.md
+```
+.claude/harness/
+├── project.md          ← core (auto by init)
+├── rules.md            ← core (auto by init)
+├── erd.md              ← template
+├── architecture.md     ← template
+├── design-system.md    ← template
+├── glossary.md         ← template
+├── my-custom-notes.md  ← your own file (agents read it too)
+└── anything.md         ← any .md file works
 ```
 
-### Managing the harness
+All agents read harness files before every task. Constitution routes the right files to the right agents:
+
+| File | Routed to |
+|------|-----------|
+| `project.md`, `rules.md` | All agents |
+| `erd.md`, `architecture.md`, `api-spec.md` | developer, reviewer, security-auditor, investigator |
+| `design-system.md` | designer |
+| `glossary.md`, `user-flow.md` | planner, designer, browser-qa |
+| `env-vars.md` | developer, security-auditor |
+| Custom files | reviewer, security-auditor (read ALL) |
+
+### Manage the harness
 
 ```bash
 npx buildcrew harness          # Show status of all harness files
 npx buildcrew add              # List available templates
 npx buildcrew add erd          # Add a specific template
-npx buildcrew init --force     # Regenerate core files
+npx buildcrew init --force     # Regenerate core files from scratch
 ```
-
-### When to update
-
-- Stack changes → update `architecture.md`
-- New DB table → update `erd.md`
-- New business rule → update `project.md` or `glossary.md`
-- Bad pattern found → add to `rules.md` "What to avoid"
-- New API endpoint → update `api-spec.md`
 
 ---
 
@@ -165,34 +121,34 @@ npx buildcrew init --force     # Regenerate core files
 
 ### Build Team
 
-| Agent | Model | What it does |
-|-------|-------|-------------|
-| **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA perspectives). Produces battle-tested plans. |
-| **designer** | opus | Web research for UI/UX references → Playwright screenshots of real sites → Figma MCP integration → production React/Next.js components. AI slop blacklist. |
-| **developer** | sonnet | Implementation following plan, design, and harness conventions. |
+| Agent | Model | Role |
+|-------|-------|------|
+| **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Produces battle-tested plans scored 1-10 per lens. |
+| **designer** | opus | Searches web for UI/UX references, screenshots real sites with Playwright, integrates Figma MCP, writes production React/Next.js components. AI slop blacklist enforced. |
+| **developer** | sonnet | Implements features following plan + design + harness conventions. Self-reviews before handoff. |
 
 ### Quality Team
 
-| Agent | Model | What it does |
-|-------|-------|-------------|
-| **qa-tester** | sonnet | Code-level verification — types, lint, build, acceptance criteria. |
-| **browser-qa** | sonnet | Real browser testing via Playwright MCP — flows, responsive, console. |
-| **reviewer** | opus | Multi-specialist code review (security, performance, testing, maintainability) + auto-fix + adversarial pass. |
-| **health-checker** | sonnet | Code quality dashboard — 7-category weighted 0-10 score + trends. |
+| Agent | Model | Role |
+|-------|-------|------|
+| **qa-tester** | sonnet | Code-level verification — types, lint, build, acceptance criteria check. |
+| **browser-qa** | sonnet | Real browser testing via Playwright MCP — user flows, responsive (375/768/1440px), console errors, network, health score (0-100). |
+| **reviewer** | opus | 4-specialist parallel review (security, performance, testing, maintainability) + adversarial pass + auto-fix. Fix-first approach. |
+| **health-checker** | sonnet | Code quality dashboard — 7-category weighted score (0-10), trend tracking, top 5 actionable items. |
 
 ### Security & Ops
 
-| Agent | Model | What it does |
-|-------|-------|-------------|
-| **security-auditor** | opus | OWASP Top 10 + STRIDE threat model. 10-phase audit with confidence gate. |
-| **canary-monitor** | sonnet | Post-deploy production health — pages, APIs, console, performance vs baseline. |
-| **shipper** | sonnet | Release pipeline — test → version bump → changelog → PR. |
+| Agent | Model | Role |
+|-------|-------|------|
+| **security-auditor** | opus | OWASP Top 10 + STRIDE threat model. 10-phase audit. Secrets scan, dependency audit, AI/LLM security. Confidence gate (8/10 standard, 2/10 comprehensive). |
+| **canary-monitor** | sonnet | Post-deploy health — page availability, API status, console errors, performance vs baseline. |
+| **shipper** | sonnet | Release pipeline — pre-flight checks → version bump → changelog → commit → push → PR creation. |
 
 ### Specialist
 
-| Agent | Model | What it does |
-|-------|-------|-------------|
-| **investigator** | sonnet | Root cause debugging. 4-phase investigation. Edit freeze on unrelated code. |
+| Agent | Model | Role |
+|-------|-------|------|
+| **investigator** | sonnet | Root cause debugging. 4 phases: investigate → hypothesize → test → fix. Edit freeze on unrelated code. "No fix without root cause." |
 
 ---
 
@@ -200,24 +156,24 @@ npx buildcrew init --force     # Regenerate core files
 
 Talk to `@constitution` naturally. It auto-detects the mode.
 
-| Mode | Trigger examples | Pipeline |
-|------|-----------------|----------|
+| Mode | Example | What happens |
+|------|---------|-------------|
 | **Feature** | "Add user dashboard" | Plan → Design → Dev → QA → Browser QA → Review |
 | **Project Audit** | "full project audit" | Scan → Prioritize → Fix → Verify (loop) |
-| **Browser QA** | "browser qa localhost:3000" | Playwright tests all flows + health score |
+| **Browser QA** | "browser qa localhost:3000" | Playwright tests flows, responsive, console |
 | **Security** | "security audit" | OWASP + STRIDE + secrets + deps |
-| **Debug** | "debug: login broken" | 4-phase root cause → fix → verify |
+| **Debug** | "debug: login broken" | 4-phase root cause investigation |
 | **Health** | "health check" | Quality dashboard (types, lint, deps, i18n) |
-| **Canary** | "canary https://myapp.com" | Post-deploy production check |
-| **Review** | "code review" | 4-specialist analysis + adversarial + auto-fix |
+| **Canary** | "canary https://myapp.com" | Post-deploy production monitoring |
+| **Review** | "code review" | Multi-specialist analysis + auto-fix |
 | **Ship** | "ship" | Test → version → changelog → PR |
 
 ### Mode chaining
 
 Constitution auto-suggests the next mode:
-- Feature complete → "Run Ship Mode?"
-- Ship complete → "Run Canary Mode?"
-- Canary CRITICAL → "Run Debug Mode?"
+- Feature complete → Ship
+- Ship complete → Canary
+- Canary CRITICAL → Debug
 
 ---
 
@@ -227,51 +183,77 @@ Each feature generates a full document chain:
 
 ```
 .claude/pipeline/{feature}/
-├── 01-plan.md           Planner: requirements + 4-lens review scores
-├── 02-references.md     Designer: curated UI/UX references from real sites
-├── 02-design.md         Designer: design decisions + component specs
-├── 03-dev-notes.md      Developer: implementation notes + files changed
-├── 04-qa-report.md      QA Tester: acceptance criteria verification
-├── 05-browser-qa.md     Browser QA: health score + screenshots + flows
-├── 06-review.md         Reviewer: findings + auto-fixes applied
-└── 07-ship.md           Shipper: PR URL + release notes
+├── 01-plan.md           Requirements + 4-lens review scores
+├── 02-references.md     Curated UI/UX references from real sites
+├── 02-design.md         Design decisions + component specs
+├── 03-dev-notes.md      Implementation notes + files changed
+├── 04-qa-report.md      Acceptance criteria verification
+├── 05-browser-qa.md     Health score + screenshots + flow results
+├── 06-review.md         Review findings + auto-fixes applied
+└── 07-ship.md           PR URL + release notes
 ```
-
-Every decision is documented. Every handoff is traceable.
 
 ---
 
 ## CLI Reference
 
-```bash
-npx buildcrew                # Install 11 agents
-npx buildcrew init           # Set up project harness (interactive)
-npx buildcrew init --force   # Regenerate harness
-npx buildcrew --force        # Overwrite existing agents
-npx buildcrew --list         # List all agents with models
-npx buildcrew --uninstall    # Remove agents
-npx buildcrew --version      # Show version
-npx buildcrew --help         # Full help
-```
+| Command | Description |
+|---------|-------------|
+| `npx buildcrew` | Install 11 agents to `.claude/agents/` |
+| `npx buildcrew init` | Set up project harness (interactive) |
+| `npx buildcrew init --force` | Regenerate harness from scratch |
+| `npx buildcrew add` | List available harness templates |
+| `npx buildcrew add <type>` | Add a harness template (erd, architecture, etc.) |
+| `npx buildcrew harness` | Show status of all harness files |
+| `npx buildcrew --force` | Overwrite existing agent files |
+| `npx buildcrew --list` | List all agents with models |
+| `npx buildcrew --uninstall` | Remove installed agents |
+| `npx buildcrew --version` | Show version |
 
 ## Requirements
 
 - **Required**: [Claude Code](https://claude.ai/code) CLI
-- **Optional**: [Playwright MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/playwright) for browser-qa and canary-monitor
+- **Optional**: [Playwright MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/playwright) — for browser-qa, canary-monitor, designer
+- **Optional**: [Figma MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/figma) — for designer
 
 ```bash
-# Enable real browser testing (optional)
+# Enable real browser testing
 claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright
 ```
 
 ## Customization
 
-Every agent is a Markdown file. Edit freely:
+Every file is editable:
 
-```bash
-.claude/agents/          # Agent definitions (edit roles, tools, instructions)
-.claude/harness/         # Project context and rules (edit anytime)
-.claude/pipeline/        # Output documents (auto-generated)
+```
+.claude/agents/      Agent definitions — edit roles, tools, instructions, model
+.claude/harness/     Project context — edit anytime, add any .md file
+.claude/pipeline/    Output documents — auto-generated per feature
+```
+
+Change an agent's model:
+```yaml
+# In any agent .md file
+model: opus    # or sonnet, haiku
+```
+
+## Architecture
+
+```
+@constitution (orchestrator, opus)
+    │
+    ├─ reads .claude/harness/*.md (project context)
+    │
+    ├─ detects mode from user message
+    │
+    ├─ dispatches agents with relevant harness context
+    │
+    └─ enforces quality gates + iteration
+         │
+         ├── Build:    planner → designer → developer
+         ├── Quality:  qa-tester → browser-qa → reviewer
+         ├── Sec/Ops:  security-auditor, canary-monitor, shipper
+         └── Debug:    investigator
 ```
 
 ## Compared to gstack
@@ -280,11 +262,12 @@ Every agent is a Markdown file. Edit freely:
 |---|-----------|--------|
 | Install | `npx buildcrew` | `git clone` + Bun + `./setup` |
 | Orchestration | Auto (constitution routes) | Manual (`/qa`, `/review`, ...) |
-| Harness | `npx buildcrew init` (interactive) | Manual CLAUDE.md editing |
+| Harness | `init` + `add` + custom .md | Manual CLAUDE.md |
 | Dependencies | None | Bun, Playwright binary (~58MB) |
 | Browser testing | Playwright MCP | Custom Playwright daemon |
-| Pipeline docs | Auto-generated chain (01→07) | Per-skill output (no chain) |
-| Agents | 11 (5 opus + 6 sonnet) | 34 (all same model) |
+| Pipeline docs | Auto-generated chain (01→07) | Per-skill output |
+| Agents | 11 (5 opus, 6 sonnet) | 34 |
+| Customization | Edit .md directly, never overwritten | May overwrite on update |
 
 ## License
 
