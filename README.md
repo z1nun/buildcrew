@@ -17,10 +17,10 @@ AI coding agents are powerful, but without structure they produce inconsistent r
 - **A team** — 11 specialized agents (5 opus + 6 sonnet), each with a clear role
 - **A process** — sequential pipeline with quality gates and iteration
 - **A harness** — your project context auto-detected from your codebase
-- **An orchestrator** — just talk to `@constitution`, it routes automatically
+- **An orchestrator** — just talk to `@buildcrew`, it routes automatically
 
 ```
-You:   @constitution Add user authentication
+You:   @buildcrew Add user authentication
 Crew:  Planner → Designer → Developer → QA → Browser QA → Reviewer → Ship
 ```
 
@@ -41,7 +41,7 @@ npx buildcrew init
 code .claude/harness/
 
 # 4. Start working
-@constitution Add user dashboard
+@buildcrew Add user dashboard
 ```
 
 ---
@@ -148,7 +148,7 @@ echo "# Notes" > .claude/harness/my-notes.md  # Or create your own
 
 ## 9 Operating Modes
 
-Talk to `@constitution` naturally. It auto-detects the mode.
+Talk to `@buildcrew` naturally. It auto-detects the mode.
 
 | Mode | Example | Pipeline |
 |------|---------|----------|
@@ -164,7 +164,7 @@ Talk to `@constitution` naturally. It auto-detects the mode.
 
 ### Mode chaining
 
-Constitution auto-suggests the next mode:
+Auto-suggests the next mode:
 - Feature complete → Ship → Canary
 - Canary CRITICAL → Debug
 
@@ -225,7 +225,7 @@ claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright
 ## Architecture
 
 ```
-@constitution (orchestrator, opus)
+@buildcrew (orchestrator, opus)
     │
     ├─ reads .claude/harness/*.md
     ├─ detects mode from user message

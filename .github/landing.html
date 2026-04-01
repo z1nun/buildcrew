@@ -254,7 +254,7 @@
       <div class="step">
         <div class="step-num">3</div>
         <h3 data-en="Build" data-ko="시작"></h3>
-        <code>@constitution [task]</code>
+        <code>@buildcrew [task]</code>
         <p data-en="Constitution auto-detects the mode and dispatches agents" data-ko="Constitution이 모드를 자동 감지하고 에이전트를 배치"></p>
       </div>
     </div>
@@ -415,7 +415,7 @@
         <div class="mode-icon">🏗️</div>
         <div>
           <div class="mode-name">Feature</div>
-          <div class="mode-trigger">@constitution Add user dashboard</div>
+          <div class="mode-trigger">@buildcrew Add user dashboard</div>
           <div class="mode-desc" data-en="Plan → Design → Dev → QA → Browser QA → Review" data-ko="기획 → 디자인 → 개발 → QA → 브라우저 QA → 리뷰"></div>
         </div>
       </div>
@@ -423,7 +423,7 @@
         <div class="mode-icon">🔍</div>
         <div>
           <div class="mode-name">Project Audit</div>
-          <div class="mode-trigger">@constitution full project audit</div>
+          <div class="mode-trigger">@buildcrew full project audit</div>
           <div class="mode-desc" data-en="Scan → Prioritize → Fix → Verify (iterative)" data-ko="스캔 → 우선순위 → 수정 → 검증 (반복)"></div>
         </div>
       </div>
@@ -431,7 +431,7 @@
         <div class="mode-icon">🌐</div>
         <div>
           <div class="mode-name">Browser QA</div>
-          <div class="mode-trigger">@constitution browser qa localhost:3000</div>
+          <div class="mode-trigger">@buildcrew browser qa localhost:3000</div>
           <div class="mode-desc" data-en="Playwright tests + health score (0-100)" data-ko="Playwright 테스트 + 건강 점수 (0-100)"></div>
         </div>
       </div>
@@ -439,7 +439,7 @@
         <div class="mode-icon">🛡️</div>
         <div>
           <div class="mode-name">Security</div>
-          <div class="mode-trigger">@constitution security audit</div>
+          <div class="mode-trigger">@buildcrew security audit</div>
           <div class="mode-desc" data-en="OWASP + STRIDE + secrets + dependency scan" data-ko="OWASP + STRIDE + 시크릿 + 의존성 스캔"></div>
         </div>
       </div>
@@ -447,7 +447,7 @@
         <div class="mode-icon">🔬</div>
         <div>
           <div class="mode-name">Debug</div>
-          <div class="mode-trigger">@constitution debug: login broken</div>
+          <div class="mode-trigger">@buildcrew debug: login broken</div>
           <div class="mode-desc" data-en="4-phase root cause investigation" data-ko="4단계 근본 원인 조사"></div>
         </div>
       </div>
@@ -455,7 +455,7 @@
         <div class="mode-icon">📊</div>
         <div>
           <div class="mode-name">Health</div>
-          <div class="mode-trigger">@constitution health check</div>
+          <div class="mode-trigger">@buildcrew health check</div>
           <div class="mode-desc" data-en="Quality dashboard (types, lint, deps, i18n)" data-ko="품질 대시보드 (타입, 린트, 의존성, i18n)"></div>
         </div>
       </div>
@@ -463,7 +463,7 @@
         <div class="mode-icon">🐤</div>
         <div>
           <div class="mode-name">Canary</div>
-          <div class="mode-trigger">@constitution canary https://myapp.com</div>
+          <div class="mode-trigger">@buildcrew canary https://myapp.com</div>
           <div class="mode-desc" data-en="Post-deploy production monitoring" data-ko="배포 후 프로덕션 모니터링"></div>
         </div>
       </div>
@@ -471,7 +471,7 @@
         <div class="mode-icon">👁️</div>
         <div>
           <div class="mode-name">Review</div>
-          <div class="mode-trigger">@constitution code review</div>
+          <div class="mode-trigger">@buildcrew code review</div>
           <div class="mode-desc" data-en="Multi-specialist + adversarial + auto-fix" data-ko="멀티 전문가 + 적대적 리뷰 + 자동 수정"></div>
         </div>
       </div>
@@ -479,7 +479,7 @@
         <div class="mode-icon">🚀</div>
         <div>
           <div class="mode-name">Ship</div>
-          <div class="mode-trigger">@constitution ship</div>
+          <div class="mode-trigger">@buildcrew ship</div>
           <div class="mode-desc" data-en="Test → version → changelog → PR" data-ko="테스트 → 버전 → 체인지로그 → PR"></div>
         </div>
       </div>
@@ -528,7 +528,7 @@
     <h2 class="section-title" data-en="Architecture" data-ko="아키텍처"></h2>
     <div class="arch-diagram">
 <pre>
-<span class="highlight">@constitution</span> <span class="opus">(opus, orchestrator)</span>
+<span class="highlight">@buildcrew</span> <span class="opus">(opus, orchestrator)</span>
         │
         ├── <span class="dim">reads</span> .claude/harness/*.md
         │

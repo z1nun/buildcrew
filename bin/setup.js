@@ -392,7 +392,7 @@ async function runInstall(force) {
     log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
   }
 
-  log(`  ${BOLD}Start:${RESET}  @constitution [your request]\n`);
+  log(`  ${BOLD}Start:${RESET}  @buildcrew [your request]\n`);
 }
 
 // ─── List / Uninstall ───
@@ -406,7 +406,7 @@ async function runList() {
     const desc = (content.match(/^description:\s*(.+)$/m) || [])[1] || "";
     const model = (content.match(/^model:\s*(.+)$/m) || [])[1] || "sonnet";
     const modelTag = model === "opus" ? `${MAGENTA}opus${RESET}` : `${DIM}sonnet${RESET}`;
-    log(`  ${name === "constitution" ? BOLD : ""}${name.padEnd(20)}${RESET} ${modelTag}  ${DIM}${desc.slice(0, 55)}${RESET}`);
+    log(`  ${name === "buildcrew" ? BOLD : ""}${name.padEnd(20)}${RESET} ${modelTag}  ${DIM}${desc.slice(0, 55)}${RESET}`);
   }
   log("");
 }
@@ -453,7 +453,7 @@ async function main() {
     ${GREEN}1.${RESET} npx buildcrew          ${DIM}Install agents${RESET}
     ${GREEN}2.${RESET} npx buildcrew init     ${DIM}Auto-generate harness from codebase${RESET}
     ${GREEN}3.${RESET} Edit .claude/harness/   ${DIM}Customize (replace <!-- comments -->)${RESET}
-    ${GREEN}4.${RESET} @constitution [task]   ${DIM}Start working${RESET}
+    ${GREEN}4.${RESET} @buildcrew [task]   ${DIM}Start working${RESET}
 
   ${BOLD}More info:${RESET} https://github.com/z1nun/buildcrew
 `);

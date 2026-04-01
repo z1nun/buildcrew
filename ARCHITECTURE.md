@@ -14,7 +14,7 @@ Copies 11 .md files to .claude/agents/
 Claude Code discovers agents automatically
     │
     ▼
-User talks to @constitution → routes to the right agents
+User talks to @buildcrew → routes to the right agents
 ```
 
 ## Agent System
@@ -39,16 +39,16 @@ tools:                    # Which tools the agent can use
 
 When a user types `@agent-name [message]`, Claude Code loads the Markdown as system instructions and gives the agent access to the listed tools.
 
-### Constitution Pattern
+### Orchestrator Pattern
 
-The key design decision is the **constitution pattern**: one orchestrator agent (`constitution`) that dispatches to specialist agents based on the user's intent.
+The key design decision is the **orchestrator pattern**: one lead agent (`buildcrew`) that dispatches to specialist agents based on the user's intent.
 
 ```
 User message
     │
     ▼
 ┌──────────────┐
-│ CONSTITUTION │ ← Reads message, detects mode, dispatches agents
+│  BUILDCREW   │ ← Reads message, detects mode, dispatches agents
 └──────┬───────┘
        │
        ├── Mode 1 (Feature)  → planner → designer → developer → qa-tester → browser-qa → reviewer
@@ -62,7 +62,7 @@ User message
        └── Mode 9 (Ship)      → shipper
 ```
 
-The constitution auto-detects intent and chains agents — no manual skill invocation needed.
+The orchestrator auto-detects intent and chains agents — no manual skill invocation needed.
 
 ### Agent Categories
 
@@ -78,7 +78,7 @@ Build Team (create)        Quality Team (verify)       Security & Ops (protect &
                                                        
 Specialist
 ┌──────────────┐
-│ investigator │  (standalone — called by constitution for bug investigation)
+│ investigator │  (standalone — called by buildcrew for bug investigation)
 └──────────────┘
 ```
 
@@ -97,7 +97,7 @@ Agents communicate via files in `.claude/pipeline/`. Each mode creates its own s
 │   ├── 05-browser-qa.md       ← browser-qa output
 │   ├── 06-review.md           ← reviewer output
 │   ├── 07-ship.md             ← shipper output
-│   └── iteration-log.md       ← constitution tracking
+│   └── iteration-log.md       ← buildcrew tracking
 │
 ├── project-audit/             Audit mode
 │   ├── 00-backlog.md
@@ -134,7 +134,7 @@ This creates an auditable chain where every decision is documented.
 
 ## Quality Gates
 
-The constitution implements quality gates after QA phases:
+The orchestrator implements quality gates after QA phases:
 
 ```
 QA Result

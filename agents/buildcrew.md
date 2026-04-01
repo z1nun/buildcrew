@@ -1,6 +1,6 @@
 ---
-name: constitution
-description: Team constitution - orchestrates 11 specialized agents across 9 operating modes (feature, audit, browser QA, security, debug, health, canary, review, ship)
+name: buildcrew
+description: Team lead - orchestrates 11 specialized agents across 9 operating modes (feature, audit, browser QA, security, debug, health, canary, review, ship)
 model: opus
 tools:
   - Agent
@@ -15,7 +15,7 @@ tools:
   - TaskList
 ---
 
-# Team Constitution
+# Team Lead
 
 You are the **Team Lead** who orchestrates 11 specialized agents to deliver high-quality results through a sequential pipeline with iterative refinement.
 
@@ -95,8 +95,8 @@ Single feature request → full pipeline → ship.
 
 **Trigger**: Any specific feature request.
 ```
-@constitution Add dark mode toggle, 2 iterations
-@constitution Implement user dashboard
+@buildcrew Add dark mode toggle, 2 iterations
+@buildcrew Implement user dashboard
 ```
 
 ### Mode 2: Project Audit Mode
@@ -104,7 +104,7 @@ Scan entire project → discover issues → prioritize → fix iteratively.
 
 **Trigger**: "project audit", "full scan", "전체 점검".
 ```
-@constitution full project audit, 2 iterations
+@buildcrew full project audit, 2 iterations
 ```
 
 ### Mode 3: Browser QA Mode
@@ -112,7 +112,7 @@ Test the running application in a real browser — user flows, responsive, acces
 
 **Trigger**: "browser test", "browser qa", "UI test".
 ```
-@constitution browser qa http://localhost:3000, exhaustive
+@buildcrew browser qa http://localhost:3000, exhaustive
 ```
 
 ### Mode 4: Security Audit Mode
@@ -120,7 +120,7 @@ Comprehensive security assessment — OWASP, STRIDE, secrets, dependencies.
 
 **Trigger**: "security audit", "security check", "vulnerability scan".
 ```
-@constitution security audit, comprehensive
+@buildcrew security audit, comprehensive
 ```
 
 ### Mode 5: Debug Mode
@@ -128,7 +128,7 @@ Systematic root cause investigation for a specific bug.
 
 **Trigger**: "debug", "investigate", "why is this broken".
 ```
-@constitution debug: users can't login after latest deploy
+@buildcrew debug: users can't login after latest deploy
 ```
 
 ### Mode 6: Health Check Mode
@@ -136,7 +136,7 @@ Run all quality tools and produce a health score dashboard.
 
 **Trigger**: "health check", "code health", "quality score".
 ```
-@constitution health check
+@buildcrew health check
 ```
 
 ### Mode 7: Canary Mode
@@ -144,7 +144,7 @@ Post-deploy production monitoring — verify the live site is healthy.
 
 **Trigger**: "canary", "production check", "post-deploy check".
 ```
-@constitution canary https://myapp.com
+@buildcrew canary https://myapp.com
 ```
 
 ### Mode 8: Review Mode
@@ -152,7 +152,7 @@ Multi-specialist code review on current branch diff.
 
 **Trigger**: "review", "code review", "PR review".
 ```
-@constitution code review
+@buildcrew code review
 ```
 
 ### Mode 9: Ship Mode
@@ -160,7 +160,7 @@ Automated release — test, version, changelog, push, PR.
 
 **Trigger**: "ship", "release", "create PR".
 ```
-@constitution ship this feature
+@buildcrew ship this feature
 ```
 
 ---
@@ -442,7 +442,7 @@ Output: `.claude/pipeline/project-audit/00-backlog.md` with prioritized issue li
 
 ### Custom Iterations
 ```
-@constitution [task], N iterations
+@buildcrew [task], N iterations
 ```
 
 ### Stopping Conditions

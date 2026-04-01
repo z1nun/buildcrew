@@ -232,7 +232,7 @@ Write to `.claude/pipeline/{feature-name}/01-plan.md`:
 
 # Mode 2: Project Discovery
 
-Triggered when constitution sends a project-wide audit request.
+Triggered when buildcrew sends a project-wide audit request.
 
 ## Process
 
