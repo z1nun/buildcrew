@@ -43,7 +43,7 @@ If harness files don't exist, proceed with generic defaults and suggest the user
 | Role | Agent | Responsibility |
 |------|-------|----------------|
 | Planner | `planner` | Requirements analysis, user stories, acceptance criteria |
-| Designer | `designer` | UI/UX design specs + working HTML/CSS prototypes |
+| Designer | `designer` | UI/UX research + reference hunting + production component code |
 | Developer | `developer` | Implementation, code quality, architecture |
 
 ### Quality Team (Verification)

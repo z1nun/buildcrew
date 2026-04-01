@@ -125,7 +125,7 @@ code .claude/harness/rules.md
 | Agent | Model | What it does |
 |-------|-------|-------------|
 | **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA perspectives). Produces battle-tested plans. |
-| **designer** | sonnet | UI/UX specs + working HTML/CSS prototypes. AI slop blacklist. |
+| **designer** | opus | Web research for UI/UX references → Playwright screenshots of real sites → Figma MCP integration → production React/Next.js components. AI slop blacklist. |
 | **developer** | sonnet | Implementation following plan, design, and harness conventions. |
 
 ### Quality Team
@@ -185,8 +185,8 @@ Each feature generates a full document chain:
 ```
 .claude/pipeline/{feature}/
 ├── 01-plan.md           Planner: requirements + 4-lens review scores
-├── 02-design.md         Designer: component specs + states + responsive
-├── 02-prototype.html    Designer: working HTML prototype (open in browser!)
+├── 02-references.md     Designer: curated UI/UX references from real sites
+├── 02-design.md         Designer: design decisions + component specs
 ├── 03-dev-notes.md      Developer: implementation notes + files changed
 ├── 04-qa-report.md      QA Tester: acceptance criteria verification
 ├── 05-browser-qa.md     Browser QA: health score + screenshots + flows
@@ -241,7 +241,7 @@ Every agent is a Markdown file. Edit freely:
 | Dependencies | None | Bun, Playwright binary (~58MB) |
 | Browser testing | Playwright MCP | Custom Playwright daemon |
 | Pipeline docs | Auto-generated chain (01→07) | Per-skill output (no chain) |
-| Agents | 11 (4 opus + 7 sonnet) | 34 (all same model) |
+| Agents | 11 (5 opus + 6 sonnet) | 34 (all same model) |
 
 ## License
 
