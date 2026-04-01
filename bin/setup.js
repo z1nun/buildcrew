@@ -404,6 +404,16 @@ async function runInstall(force) {
     log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
   }
 
+  // Check Playwright MCP
+  try {
+    const { execSync } = await import("child_process");
+    const mcpList = execSync("claude mcp list 2>/dev/null", { encoding: "utf8" });
+    if (!mcpList.includes("playwright")) {
+      log(`  ${YELLOW}Optional:${RESET} Enable real browser testing (browser-qa, designer, canary-monitor):`);
+      log(`  ${DIM}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+    }
+  } catch { /* claude CLI not available, skip */ }
+
   log(`  ${BOLD}Start:${RESET}  @buildcrew [your request]\n`);
 }
 
