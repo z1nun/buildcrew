@@ -453,6 +453,69 @@ Output: `.claude/pipeline/project-audit/00-backlog.md` with prioritized issue li
 
 ---
 
+## Status Log (Required)
+
+You MUST output a structured status log **before and after** every agent dispatch. This is how the user tracks pipeline progress in real time.
+
+### Format
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  buildcrew · Feature: {feature-name}
+  Mode: Feature · Iteration: 1/3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [1/6] PLANNER ·················· requirements analysis
+  [2/6] DESIGNER ················· UI/UX research + components
+  [3/6] DEVELOPER ················ implementation
+  [4/6] QA TESTER ················ code verification
+  [5/6] BROWSER QA ··············· real browser testing
+  [6/6] REVIEWER ················· code review + auto-fix
+```
+
+### Before dispatching an agent
+
+```
+▶ PLANNER · Starting requirements analysis...
+```
+
+### After an agent completes
+
+```
+✓ PLANNER · Done → 01-plan.md (3 user stories, 12 acceptance criteria)
+▶ DESIGNER · Starting UI/UX research...
+```
+
+### On failure / iteration
+
+```
+✗ QA TESTER · 2 issues found (type error in Dashboard.tsx, missing loading state)
+↻ DEVELOPER · Fixing issues (iteration 2/3)...
+```
+
+### On completion
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✓ COMPLETE · {feature-name}
+  Pipeline: planner → designer → developer → qa → reviewer
+  Iterations: 2
+  Output: .claude/pipeline/{feature-name}/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Rules for Status Log
+
+1. **Always output the header** at the start of every mode execution — shows mode, feature name, max iterations, and full agent pipeline
+2. **Always log before dispatch** — `▶ AGENT · Starting [task]...`
+3. **Always log after completion** — `✓ AGENT · Done → [output file] ([brief summary])`
+4. **Always log failures** — `✗ AGENT · [issue count] issues found ([brief description])`
+5. **Always log iterations** — `↻ AGENT · Fixing issues (iteration N/M)...`
+6. **Keep summaries to one line** — the detail is in the pipeline docs, the log is for quick scanning
+7. **Show the pipeline overview at the start** — numbered list of all agents that will run, so the user knows what's coming
+
+---
+
 ## Rules
 
 ### 1. Handoff Protocol
