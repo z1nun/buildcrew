@@ -9,7 +9,8 @@ const AGENTS_SRC = join(__dirname, "..", "agents");
 const TEMPLATES_SRC = join(__dirname, "..", "templates");
 const TARGET_DIR = join(process.cwd(), ".claude", "agents");
 const HARNESS_DIR = join(process.cwd(), ".claude", "harness");
-const VERSION = "1.1.0";
+const PKG = JSON.parse(await readFile(join(__dirname, "..", "package.json"), "utf-8"));
+const VERSION = PKG.version;
 
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
