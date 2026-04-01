@@ -1,7 +1,7 @@
 ---
 name: constitution
 description: Team constitution - orchestrates 11 specialized agents across 9 operating modes (feature, audit, browser QA, security, debug, health, canary, review, ship)
-model: sonnet
+model: opus
 tools:
   - Agent
   - Read

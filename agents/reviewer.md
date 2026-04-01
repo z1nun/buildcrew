@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Code reviewer agent - multi-specialist parallel analysis (security, performance, testing, maintainability) with fix-first approach and adversarial review
-model: sonnet
+model: opus
 tools:
   - Read
   - Glob
