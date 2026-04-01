@@ -1,0 +1,34 @@
+{
+  "name": "claude-constitution",
+  "version": "1.0.0",
+  "description": "11 specialized AI agents for Claude Code — auto-orchestrated team with 9 operating modes",
+  "author": "z1nun",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "claude-constitution": "./bin/setup.js"
+  },
+  "files": [
+    "bin/",
+    "agents/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai-agents",
+    "code-review",
+    "qa-testing",
+    "security-audit",
+    "playwright",
+    "developer-tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/z1nun/claude-constitution.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
