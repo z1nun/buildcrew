@@ -1,5 +1,7 @@
 # buildcrew
 
+> **English** | [한국어](README.ko.md) | [Visual Guide](docs/index.html)
+
 11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes.
 
 ```bash

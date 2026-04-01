@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>buildcrew — 11 AI Agents for Claude Code</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --accent: #6c63ff;
+    --accent2: #4ecdc4;
+    --opus: #c084fc;
+    --sonnet: #60a5fa;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --red: #f87171;
+    --orange: #fb923c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* Language Toggle */
+  .lang-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 100;
+    display: flex; gap: 4px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; font-size: 13px;
+  }
+  .lang-btn {
+    padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
+    background: transparent; color: var(--text-dim); font-weight: 500; transition: all .2s;
+  }
+  .lang-btn.active { background: var(--accent); color: white; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 100px 0 60px; position: relative; }
+  .hero::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px; background: radial-gradient(circle, rgba(108,99,255,.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+  .hero h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 1.25rem; color: var(--text-dim); max-width: 600px; margin: 0 auto 32px; }
+  .hero-cmd {
+    display: inline-block; background: var(--surface2); border: 1px solid var(--border);
+    padding: 12px 32px; border-radius: 12px; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 1.1rem; color: var(--accent2);
+  }
+  .hero-cmd span { color: var(--text-dim); }
+
+  /* Section */
+  section { padding: 80px 0; }
+  .section-title {
+    font-size: 1.8rem; font-weight: 700; margin-bottom: 12px; text-align: center;
+  }
+  .section-subtitle {
+    color: var(--text-dim); text-align: center; margin-bottom: 48px; font-size: 1.05rem;
+  }
+
+  /* Steps */
+  .steps { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .step {
+    flex: 1; min-width: 220px; max-width: 300px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; text-align: center;
+  }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+    color: white; font-weight: 700; display: inline-flex; align-items: center;
+    justify-content: center; margin-bottom: 12px;
+  }
+  .step h3 { font-size: 1rem; margin-bottom: 8px; }
+  .step code { background: var(--surface2); padding: 2px 8px; border-radius: 4px; font-size: .85rem; color: var(--accent2); }
+  .step p { font-size: .9rem; color: var(--text-dim); margin-top: 8px; }
+
+  /* Agent Grid */
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .agent-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; transition: border-color .2s;
+  }
+  .agent-card:hover { border-color: var(--accent); }
+  .agent-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .agent-name { font-weight: 700; font-size: 1.05rem; }
+  .agent-model {
+    font-size: .7rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; text-transform: uppercase;
+  }
+  .model-opus { background: rgba(192,132,252,.15); color: var(--opus); }
+  .model-sonnet { background: rgba(96,165,250,.1); color: var(--sonnet); }
+  .agent-role { font-size: .85rem; color: var(--text-dim); }
+  .agent-team {
+    display: inline-block; font-size: .7rem; padding: 2px 8px; border-radius: 4px;
+    margin-bottom: 8px; font-weight: 600;
+  }
+  .team-build { background: rgba(78,205,196,.1); color: var(--accent2); }
+  .team-quality { background: rgba(74,222,128,.1); color: var(--green); }
+  .team-security { background: rgba(251,146,60,.1); color: var(--orange); }
+  .team-specialist { background: rgba(250,204,21,.1); color: var(--yellow); }
+
+  /* Pipeline */
+  .pipeline {
+    display: flex; align-items: center; gap: 0; justify-content: center;
+    flex-wrap: wrap; padding: 20px 0;
+  }
+  .pipeline-step {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; text-align: center; min-width: 110px; position: relative;
+  }
+  .pipeline-step .num { font-size: .7rem; color: var(--accent); font-weight: 700; }
+  .pipeline-step .name { font-size: .85rem; font-weight: 600; margin-top: 2px; }
+  .pipeline-step .file { font-size: .7rem; color: var(--text-dim); font-family: monospace; }
+  .pipeline-arrow { color: var(--text-dim); font-size: 1.2rem; padding: 0 4px; flex-shrink: 0; }
+
+  /* Modes */
+  .modes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .mode-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px;
+  }
+  .mode-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+  .mode-name { font-weight: 700; font-size: .95rem; }
+  .mode-trigger { font-size: .8rem; color: var(--accent2); font-family: monospace; margin: 4px 0; }
+  .mode-desc { font-size: .82rem; color: var(--text-dim); }
+
+  /* Harness */
+  .harness-visual {
+    display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start;
+  }
+  .harness-files {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+  }
+  .harness-files h3 { font-size: .9rem; margin-bottom: 12px; color: var(--accent2); }
+  .hf-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    font-size: .85rem; border-bottom: 1px solid var(--border);
+  }
+  .hf-item:last-child { border-bottom: none; }
+  .hf-icon { font-size: .7rem; }
+  .hf-core { color: var(--green); }
+  .hf-template { color: var(--accent); }
+  .hf-custom { color: var(--yellow); }
+  .harness-flow {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px;
+  }
+  .harness-flow h3 { font-size: .9rem; margin-bottom: 16px; }
+  .flow-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    font-size: .82rem;
+  }
+  .flow-file { background: var(--surface2); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: .78rem; min-width: 130px; }
+  .flow-arrow { color: var(--text-dim); }
+  .flow-agents { color: var(--text-dim); }
+  .flow-agents span { color: var(--accent); }
+
+  /* Architecture */
+  .arch-diagram {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: .82rem;
+    line-height: 1.8; overflow-x: auto; text-align: center;
+  }
+  .arch-diagram .highlight { color: var(--accent); font-weight: 700; }
+  .arch-diagram .dim { color: var(--text-dim); }
+  .arch-diagram .opus { color: var(--opus); }
+  .arch-diagram .green { color: var(--green); }
+
+  /* Comparison */
+  .compare-table { width: 100%; border-collapse: collapse; }
+  .compare-table th, .compare-table td {
+    padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border);
+    font-size: .9rem;
+  }
+  .compare-table th { color: var(--text-dim); font-weight: 600; font-size: .8rem; text-transform: uppercase; }
+  .compare-table td:first-child { font-weight: 600; }
+  .compare-table .bc { color: var(--accent); }
+  .compare-table .gs { color: var(--text-dim); }
+
+  /* Footer */
+  footer { text-align: center; padding: 60px 0 40px; color: var(--text-dim); font-size: .85rem; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2.2rem; }
+    .hero { padding: 80px 0 40px; }
+    .harness-visual { grid-template-columns: 1fr; }
+    .pipeline { gap: 4px; }
+    .pipeline-step { min-width: 80px; padding: 10px; }
+    .pipeline-step .name { font-size: .75rem; }
+    .pipeline-step .file { display: none; }
+  }
+
+  /* Animations */
+  .fade-in { opacity: 0; transform: translateY(20px); transition: all .5s ease; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Language Toggle -->
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('ko')">KO</button>
+</div>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="container">
+    <h1><span>buildcrew</span></h1>
+    <p data-en="11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes."
+       data-ko="Claude Code를 위한 11개 AI 에이전트 — 9개 운영 모드로 자동 오케스트레이션되는 개발 팀."></p>
+    <div class="hero-cmd"><span>$</span> npx buildcrew</div>
+  </div>
+</header>
+
+<!-- Getting Started -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="Getting Started" data-ko="시작하기"></h2>
+    <p class="section-subtitle" data-en="Three steps to a full engineering team." data-ko="3단계로 완전한 엔지니어링 팀 구축."></p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3 data-en="Install" data-ko="설치"></h3>
+        <code>npx buildcrew</code>
+        <p data-en="Copies 11 agent files to .claude/agents/" data-ko="11개 에이전트 파일을 .claude/agents/에 복사"></p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3 data-en="Harness" data-ko="하네스 설정"></h3>
+        <code>npx buildcrew init</code>
+        <p data-en="Set up project context, team rules, domain knowledge" data-ko="프로젝트 컨텍스트, 팀 규칙, 도메인 지식 설정"></p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3 data-en="Build" data-ko="시작"></h3>
+        <code>@constitution [task]</code>
+        <p data-en="Constitution auto-detects the mode and dispatches agents" data-ko="Constitution이 모드를 자동 감지하고 에이전트를 배치"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Agents -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="11 Agents" data-ko="11개 에이전트"></h2>
+    <p class="section-subtitle" data-en="5 opus (critical thinking) + 6 sonnet (execution)" data-ko="5 opus (핵심 판단) + 6 sonnet (실행)"></p>
+    <div class="agent-grid">
+
+      <div class="agent-card">
+        <span class="agent-team team-build" data-en="BUILD" data-ko="빌드"></span>
+        <div class="agent-header">
+          <span class="agent-name">planner</span>
+          <span class="agent-model model-opus">opus</span>
+        </div>
+        <div class="agent-role" data-en="6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Plans scored 1-10 per lens."
+             data-ko="6가지 강제 질문 + 4관점 자체 리뷰 (CEO, 엔지니어링, 디자인, QA). 관점별 1-10점 채점."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-build" data-en="BUILD" data-ko="빌드"></span>
+        <div class="agent-header">
+          <span class="agent-name">designer</span>
+          <span class="agent-model model-opus">opus</span>
+        </div>
+        <div class="agent-role" data-en="Web research for UI/UX references → Playwright screenshots → Figma MCP → production components. AI slop blacklist."
+             data-ko="웹 리서치로 UI/UX 레퍼런스 수집 → Playwright 스크린샷 → Figma MCP → 프로덕션 컴포넌트 코드 작성. AI 슬롭 블랙리스트."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-build" data-en="BUILD" data-ko="빌드"></span>
+        <div class="agent-header">
+          <span class="agent-name">developer</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Implements features following plan + design + harness conventions."
+             data-ko="기획서 + 디자인 + 하네스 규칙에 따라 기능 구현."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-quality" data-en="QUALITY" data-ko="품질"></span>
+        <div class="agent-header">
+          <span class="agent-name">qa-tester</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Code-level verification — types, lint, build, acceptance criteria."
+             data-ko="코드 레벨 검증 — 타입 체크, 린트, 빌드, 수용 기준 확인."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-quality" data-en="QUALITY" data-ko="품질"></span>
+        <div class="agent-header">
+          <span class="agent-name">browser-qa</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Real browser testing via Playwright MCP — flows, responsive, console errors, health score."
+             data-ko="Playwright MCP로 실제 브라우저 테스트 — 유저 플로우, 반응형, 콘솔 에러, 건강 점수."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-quality" data-en="QUALITY" data-ko="품질"></span>
+        <div class="agent-header">
+          <span class="agent-name">reviewer</span>
+          <span class="agent-model model-opus">opus</span>
+        </div>
+        <div class="agent-role" data-en="4-specialist parallel review (security, perf, testing, maintainability) + adversarial pass + auto-fix."
+             data-ko="4개 전문가 병렬 리뷰 (보안, 성능, 테스트, 유지보수) + 적대적 리뷰 + 자동 수정."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-quality" data-en="QUALITY" data-ko="품질"></span>
+        <div class="agent-header">
+          <span class="agent-name">health-checker</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Code quality dashboard — 7-category weighted 0-10 score + trend tracking."
+             data-ko="코드 품질 대시보드 — 7개 카테고리 가중 점수 (0-10) + 트렌드 추적."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-security" data-en="SECURITY & OPS" data-ko="보안 & 운영"></span>
+        <div class="agent-header">
+          <span class="agent-name">security-auditor</span>
+          <span class="agent-model model-opus">opus</span>
+        </div>
+        <div class="agent-role" data-en="OWASP Top 10 + STRIDE threat model. 10-phase audit with confidence gate."
+             data-ko="OWASP Top 10 + STRIDE 위협 모델. 10단계 감사 + 신뢰도 게이트."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-security" data-en="SECURITY & OPS" data-ko="보안 & 운영"></span>
+        <div class="agent-header">
+          <span class="agent-name">canary-monitor</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Post-deploy production health — pages, APIs, console, performance vs baseline."
+             data-ko="배포 후 프로덕션 헬스 — 페이지, API, 콘솔 에러, 성능 베이스라인 비교."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-security" data-en="SECURITY & OPS" data-ko="보안 & 운영"></span>
+        <div class="agent-header">
+          <span class="agent-name">shipper</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Release pipeline — test → version bump → changelog → PR creation."
+             data-ko="릴리즈 파이프라인 — 테스트 → 버전 범프 → 체인지로그 → PR 생성."></div>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-team team-specialist" data-en="SPECIALIST" data-ko="전문가"></span>
+        <div class="agent-header">
+          <span class="agent-name">investigator</span>
+          <span class="agent-model model-sonnet">sonnet</span>
+        </div>
+        <div class="agent-role" data-en="Root cause debugging. 4 phases. Edit freeze on unrelated code. &quot;No fix without root cause.&quot;"
+             data-ko="근본 원인 디버깅. 4단계 조사. 무관한 코드 수정 동결. &quot;근본 원인 없이 수정 금지.&quot;"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="Feature Pipeline" data-ko="기능 파이프라인"></h2>
+    <p class="section-subtitle" data-en="Every feature generates a full document chain." data-ko="모든 기능이 완전한 문서 체인을 생성합니다."></p>
+    <div class="pipeline">
+      <div class="pipeline-step"><div class="num">01</div><div class="name">Plan</div><div class="file">01-plan.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">02</div><div class="name">Design</div><div class="file">02-design.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">03</div><div class="name">Dev</div><div class="file">03-dev-notes.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">04</div><div class="name">QA</div><div class="file">04-qa-report.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">05</div><div class="name" data-en="Browser" data-ko="브라우저">Browser</div><div class="file">05-browser-qa.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">06</div><div class="name" data-en="Review" data-ko="리뷰">Review</div><div class="file">06-review.md</div></div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step"><div class="num">07</div><div class="name">Ship</div><div class="file">07-ship.md</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 Modes -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="9 Operating Modes" data-ko="9가지 운영 모드"></h2>
+    <p class="section-subtitle" data-en="Talk naturally. Constitution auto-detects the mode." data-ko="자연스럽게 말하세요. Constitution이 모드를 자동 감지합니다."></p>
+    <div class="modes-grid">
+      <div class="mode-card">
+        <div class="mode-icon">🏗️</div>
+        <div>
+          <div class="mode-name">Feature</div>
+          <div class="mode-trigger">@constitution Add user dashboard</div>
+          <div class="mode-desc" data-en="Plan → Design → Dev → QA → Browser QA → Review" data-ko="기획 → 디자인 → 개발 → QA → 브라우저 QA → 리뷰"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🔍</div>
+        <div>
+          <div class="mode-name">Project Audit</div>
+          <div class="mode-trigger">@constitution full project audit</div>
+          <div class="mode-desc" data-en="Scan → Prioritize → Fix → Verify (iterative)" data-ko="스캔 → 우선순위 → 수정 → 검증 (반복)"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🌐</div>
+        <div>
+          <div class="mode-name">Browser QA</div>
+          <div class="mode-trigger">@constitution browser qa localhost:3000</div>
+          <div class="mode-desc" data-en="Playwright tests + health score (0-100)" data-ko="Playwright 테스트 + 건강 점수 (0-100)"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🛡️</div>
+        <div>
+          <div class="mode-name">Security</div>
+          <div class="mode-trigger">@constitution security audit</div>
+          <div class="mode-desc" data-en="OWASP + STRIDE + secrets + dependency scan" data-ko="OWASP + STRIDE + 시크릿 + 의존성 스캔"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🔬</div>
+        <div>
+          <div class="mode-name">Debug</div>
+          <div class="mode-trigger">@constitution debug: login broken</div>
+          <div class="mode-desc" data-en="4-phase root cause investigation" data-ko="4단계 근본 원인 조사"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">📊</div>
+        <div>
+          <div class="mode-name">Health</div>
+          <div class="mode-trigger">@constitution health check</div>
+          <div class="mode-desc" data-en="Quality dashboard (types, lint, deps, i18n)" data-ko="품질 대시보드 (타입, 린트, 의존성, i18n)"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🐤</div>
+        <div>
+          <div class="mode-name">Canary</div>
+          <div class="mode-trigger">@constitution canary https://myapp.com</div>
+          <div class="mode-desc" data-en="Post-deploy production monitoring" data-ko="배포 후 프로덕션 모니터링"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">👁️</div>
+        <div>
+          <div class="mode-name">Review</div>
+          <div class="mode-trigger">@constitution code review</div>
+          <div class="mode-desc" data-en="Multi-specialist + adversarial + auto-fix" data-ko="멀티 전문가 + 적대적 리뷰 + 자동 수정"></div>
+        </div>
+      </div>
+      <div class="mode-card">
+        <div class="mode-icon">🚀</div>
+        <div>
+          <div class="mode-name">Ship</div>
+          <div class="mode-trigger">@constitution ship</div>
+          <div class="mode-desc" data-en="Test → version → changelog → PR" data-ko="테스트 → 버전 → 체인지로그 → PR"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Harness -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="Harness Engineering" data-ko="하네스 엔지니어링"></h2>
+    <p class="section-subtitle" data-en="Your project context baked into every agent." data-ko="프로젝트 컨텍스트가 모든 에이전트에 내장됩니다."></p>
+    <div class="harness-visual">
+      <div class="harness-files">
+        <h3>.claude/harness/</h3>
+        <div class="hf-item"><span class="hf-icon hf-core">●</span> project.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">init</span></div>
+        <div class="hf-item"><span class="hf-icon hf-core">●</span> rules.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">init</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> erd.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> architecture.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> api-spec.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> design-system.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> glossary.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> user-flow.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-template">●</span> env-vars.md <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)">add</span></div>
+        <div class="hf-item"><span class="hf-icon hf-custom">●</span> <span data-en="anything.md" data-ko="무엇이든.md">anything.md</span> <span style="margin-left:auto;font-size:.7rem;color:var(--text-dim)" data-en="custom" data-ko="직접 작성">custom</span></div>
+      </div>
+      <div class="harness-flow">
+        <h3 data-en="Agent Routing" data-ko="에이전트 라우팅"></h3>
+        <div class="flow-row"><div class="flow-file">project.md</div><span class="flow-arrow">→</span><div class="flow-agents" data-en="<span>All agents</span>" data-ko="<span>모든 에이전트</span>"></div></div>
+        <div class="flow-row"><div class="flow-file">rules.md</div><span class="flow-arrow">→</span><div class="flow-agents" data-en="<span>All agents</span>" data-ko="<span>모든 에이전트</span>"></div></div>
+        <div class="flow-row"><div class="flow-file">erd.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>developer</span>, <span>reviewer</span>, <span>security-auditor</span></div></div>
+        <div class="flow-row"><div class="flow-file">architecture.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>developer</span>, <span>reviewer</span>, <span>investigator</span></div></div>
+        <div class="flow-row"><div class="flow-file">api-spec.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>developer</span>, <span>reviewer</span>, <span>security-auditor</span></div></div>
+        <div class="flow-row"><div class="flow-file">design-system.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>designer</span></div></div>
+        <div class="flow-row"><div class="flow-file">glossary.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>planner</span>, <span>designer</span></div></div>
+        <div class="flow-row"><div class="flow-file">user-flow.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>planner</span>, <span>browser-qa</span>, <span>canary</span></div></div>
+        <div class="flow-row"><div class="flow-file">*.md</div><span class="flow-arrow">→</span><div class="flow-agents"><span>reviewer</span>, <span>security-auditor</span> <span style="color:var(--text-dim)" data-en="(read all)" data-ko="(전부 읽음)"></span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Architecture -->
+<section class="fade-in">
+  <div class="container">
+    <h2 class="section-title" data-en="Architecture" data-ko="아키텍처"></h2>
+    <div class="arch-diagram">
+<pre>
+<span class="highlight">@constitution</span> <span class="opus">(opus, orchestrator)</span>
+        │
+        ├── <span class="dim">reads</span> .claude/harness/*.md
+        │
+        ├── <span class="dim">detects mode from user message</span>
+        │
+        ├── <span class="dim">dispatches agents with harness context</span>
+        │
+        └── <span class="dim">enforces quality gates + iteration</span>
+             │
+             ├── <span class="green">Build:</span>    planner → designer → developer
+             ├── <span class="green">Quality:</span>  qa-tester → browser-qa → reviewer
+             ├── <span class="green">Sec/Ops:</span>  security-auditor, canary-monitor, shipper
+             └── <span class="green">Debug:</span>    investigator
+</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p>buildcrew v1.0.0 — MIT License</p>
+    <p><a href="https://github.com/z1nun/buildcrew">GitHub</a></p>
+  </div>
+</footer>
+
+<script>
+  // Language
+  let lang = 'en';
+  function setLang(l) {
+    lang = l;
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === l.toUpperCase()));
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const text = el.getAttribute(`data-${l}`);
+      if (text) {
+        if (el.children.length > 0 && el.querySelector('span')) {
+          el.innerHTML = text;
+        } else {
+          el.textContent = text;
+        }
+      }
+    });
+  }
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
