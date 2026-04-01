@@ -374,6 +374,18 @@ async function runInstall(force) {
   log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}11 AI agents for Claude Code${RESET}\n`);
 
   await mkdir(TARGET_DIR, { recursive: true });
+
+  // Migrate: remove renamed agents from previous versions
+  const deprecated = ["constitution.md"];
+  for (const old of deprecated) {
+    const oldPath = join(TARGET_DIR, old);
+    if (await exists(oldPath)) {
+      const { unlink } = await import("fs/promises");
+      await unlink(oldPath);
+      log(`  ${YELLOW} ✕ ${RESET} ${old} ${DIM}(renamed → buildcrew.md)${RESET}`);
+    }
+  }
+
   let installed = 0, skipped = 0;
 
   for (const file of files) {
