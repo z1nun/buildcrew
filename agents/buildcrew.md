@@ -167,22 +167,27 @@ Automated release — test, version, changelog, push, PR.
 
 ## Workflow: Feature Mode
 
+Each iteration runs the **full end-to-end pipeline**. The planner re-evaluates at the start of every cycle.
+
 ```
 [Feature Request]
       │
       ▼
+━━━ Iteration 1/N ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      │
+      ▼
   ┌─────────┐
-  │ PLANNER │ → Requirements & acceptance criteria
-  └────┬────┘
+  │ PLANNER │ → Iteration 1: full requirements & acceptance criteria
+  └────┬────┘   Iteration 2+: review previous cycle results, refine plan
        │
        ▼
   ┌──────────┐
-  │ DESIGNER │ → UI spec + HTML prototype
-  └────┬─────┘
+  │ DESIGNER │ → Iteration 1: full UI/UX research + components
+  └────┬─────┘   Iteration 2+: refine based on QA/review feedback
        │
        ▼
   ┌───────────┐
-  │ DEVELOPER │ → Implementation
+  │ DEVELOPER │ → Implement / fix / improve
   └────┬──────┘
        │
        ▼
@@ -201,12 +206,24 @@ Automated release — test, version, changelog, push, PR.
   └────┬───────┘
        │
        ▼
-  [Quality Gate: All PASS?]
+  [All PASS + no improvements left?]
        │
-    No │──→ Back to relevant phase (iteration +1)
+    No │──→ Next iteration (full pipeline from PLANNER)
        │
    Yes │──→ ✅ Complete (suggest Ship Mode)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+### Iteration Behavior by Agent
+
+| Agent | Iteration 1 | Iteration 2+ |
+|-------|------------|--------------|
+| **Planner** | Full requirements analysis | Reviews QA/review findings, updates acceptance criteria, identifies new improvement areas |
+| **Designer** | Full research + components | Refines UI based on feedback, fixes design issues found in QA |
+| **Developer** | Full implementation | Fixes issues, implements improvements from updated plan |
+| **QA Tester** | Full verification | Re-verifies fixes + regression check |
+| **Browser QA** | Full browser testing | Re-tests affected flows + new issues |
+| **Reviewer** | Full code review | Verifies fixes applied correctly, new review pass |
 
 **Note**: Browser QA is skipped for non-UI features (API-only, config changes, etc.). Reviewer always runs.
 
@@ -486,11 +503,16 @@ You MUST output a structured status log **before and after** every agent dispatc
 ▶ DESIGNER · Starting UI/UX research...
 ```
 
-### On failure / iteration
+### On iteration (full cycle restart)
 
 ```
-✗ QA TESTER · 2 issues found (type error in Dashboard.tsx, missing loading state)
-↻ DEVELOPER · Fixing issues (iteration 2/3)...
+✗ REVIEWER · 3 issues found (perf regression, missing error state, a11y)
+↻ Starting iteration 2/5 — full pipeline from PLANNER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  buildcrew · Feature: {feature-name}
+  Mode: Feature · Iteration: 2/5
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ PLANNER · Reviewing iteration 1 results, updating plan...
 ```
 
 ### On completion
@@ -567,8 +589,16 @@ Each agent's output follows this structure:
 1. Parse feature request and iteration count (default: 3)
 2. Create pipeline directory: `.claude/pipeline/{feature-name}/`
 3. Create tasks for tracking progress
-4. Run **planner** → **designer** → **developer** → **qa-tester** → **browser-qa** (if UI) → **reviewer**
-5. All PASS → suggest Ship Mode, FAIL → route back, iterate
+4. **For each iteration (1 to N), run the FULL pipeline:**
+   - **planner** → reviews previous cycle results (iteration 2+), updates plan
+   - **designer** → refines UI based on feedback (iteration 2+)
+   - **developer** → implements / fixes / improves
+   - **qa-tester** → verifies code-level quality
+   - **browser-qa** (if UI) → real browser testing
+   - **reviewer** → code review + auto-fix
+5. All PASS + no improvements left → suggest Ship Mode
+6. Issues remain → next full iteration from PLANNER
+7. **Every iteration is a complete end-to-end cycle, not a partial fix loop**
 
 ### Project Audit Mode
 1. Create pipeline directory: `.claude/pipeline/project-audit/`
