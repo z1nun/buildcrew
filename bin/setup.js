@@ -475,16 +475,12 @@ async function runInstall(force) {
   if (installed > 0 || updated > 0) log(`  ${GREEN}${BOLD}Done!${RESET} ${parts.join(", ")}.\n`);
   else log(`  ${GREEN}All agents up-to-date.${RESET} (v${VERSION})\n`);
 
-  if (!(await exists(join(HARNESS_DIR, "project.md")))) {
-    log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
-  }
-
-  // Check Playwright MCP (required for browser-qa, design-reviewer, canary-monitor, designer)
+  // ─── Step 2: Playwright MCP ───
   try {
     const { execSync } = await import("child_process");
     const mcpList = execSync("claude mcp list 2>/dev/null", { encoding: "utf8" });
     if (!mcpList.includes("playwright")) {
-      log(`\n  ${YELLOW}Playwright MCP${RESET} is needed for browser testing agents.`);
+      log(`  ${YELLOW}Playwright MCP${RESET} is needed for browser testing agents.`);
       log(`  ${DIM}Used by: browser-qa, design-reviewer, canary-monitor, designer${RESET}\n`);
       const answer = await ask(`  Install Playwright MCP now? ${BOLD}(Y/n)${RESET} `);
       if (answer === "" || answer === "y" || answer === "yes") {
@@ -497,13 +493,25 @@ async function runInstall(force) {
           log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
         }
       } else {
-        log(`\n  ${DIM}Skipped. Install later with:${RESET}`);
-        log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+        log(`\n  ${DIM}Skipped. Run later: claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
       }
     } else {
       log(`  ${GREEN}Playwright MCP:${RESET} installed ✓\n`);
     }
   } catch { /* claude CLI not available, skip */ }
+
+  // ─── Step 3: Project harness ───
+  if (!(await exists(join(HARNESS_DIR, "project.md")))) {
+    const initAnswer = await ask(`  Generate project harness? ${DIM}(auto-detects your stack)${RESET} ${BOLD}(Y/n)${RESET} `);
+    if (initAnswer === "" || initAnswer === "y" || initAnswer === "yes") {
+      log("");
+      await runInit(false);
+    } else {
+      log(`\n  ${DIM}Skipped. Run later: npx buildcrew init${RESET}\n`);
+    }
+  } else {
+    log(`  ${GREEN}Project harness:${RESET} exists ✓\n`);
+  }
 
   log(`  ${BOLD}Start:${RESET}  @buildcrew [your request]\n`);
 }
