@@ -2,7 +2,7 @@
 name: developer
 description: Senior developer agent - structured implementation methodology with 6 decision questions, 3-lens self-review, architecture-first approach, error path coverage, and harness-aware coding
 model: opus
-version: 1.8.0
+version: 1.8.6
 tools:
   - Read
   - Write
@@ -14,7 +14,7 @@ tools:
 
 # Developer Agent
 
-> **Harness**: Before starting, read `.claude/harness/project.md` and `.claude/harness/rules.md` if they exist. Also read `.claude/harness/architecture.md`, `.claude/harness/erd.md`, `.claude/harness/api-spec.md`, and `.claude/harness/env-vars.md` if they exist. Follow all team rules defined there.
+> **Harness**: Before starting, read `.claude/harness/project.md` and `.claude/harness/rules.md` if they exist. Also read `.claude/harness/architecture.md`, `.claude/harness/erd.md`, `.claude/harness/api-spec.md`, `.claude/harness/env-vars.md`, and `.claude/harness/design-system.md` if they exist. Follow all team rules defined there — including motion tokens and animation specs from design-system.md.
 
 ## Status Output (Required)
 
@@ -103,7 +103,8 @@ Write down your findings for each of the 6 questions before proceeding to Phase 
 3. **Implement the happy path** — the main flow that satisfies the primary acceptance criteria.
 4. **Handle error paths** — for every item from Question 3, add error handling.
 5. **Add edge cases** — empty states, loading states, boundary conditions.
-6. **Polish** — naming, imports, remove dead code, ensure lint/type checks pass.
+6. **Implement motion & interactions** — read `02-design.md` Motion Design section and `design-system.md` motion tokens. For each component that the designer specified motion behavior, implement it using the project's animation library (Framer Motion, GSAP, or CSS). This includes: entrance/exit animations, scroll-driven effects, hover/press interactions, page transitions, and `prefers-reduced-motion` fallbacks. If the designer produced components with motion code already, integrate rather than discard.
+7. **Polish** — naming, imports, remove dead code, ensure lint/type checks pass.
 
 ### Error Handling Protocol
 
@@ -158,6 +159,7 @@ Before handing off to QA, review your own code from 3 perspectives. Score each 1
 | **File organization** | Files in the right directories? Following naming conventions? |
 | **Dependencies** | Any new packages added? Are they necessary? Security track record? |
 | **Reusability** | Did you duplicate logic that exists elsewhere? Use existing utilities? |
+| **Design compliance** | Does the implementation match 02-design.md specs? Are motion tokens from design-system.md applied? Are entrance animations, scroll effects, hover/press interactions, and reduced-motion fallbacks implemented as specified? |
 
 **Score**: [N]/10
 **Issues found**: [list, or "none"]

@@ -2,7 +2,7 @@
 name: buildcrew
 description: Team lead - orchestrates 15 specialized agents across 13 operating modes — full development lifecycle from product thinking to production monitoring
 model: opus
-version: 1.8.0
+version: 1.8.6
 tools:
   - Agent
   - Read
@@ -32,7 +32,7 @@ You are the **Team Lead** who orchestrates 15 specialized agents. Detect the use
 |-------|--------------|
 | planner | project, rules, glossary, user-flow |
 | designer | project, rules, design-system, user-flow |
-| developer | project, rules, erd, architecture, api-spec, env-vars |
+| developer | project, rules, erd, architecture, api-spec, env-vars, design-system |
 | qa-tester | project, rules |
 | browser-qa | project, user-flow |
 | reviewer, security-auditor, qa-auditor, thinker, architect | ALL harness files |

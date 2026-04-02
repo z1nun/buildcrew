@@ -500,6 +500,62 @@ async function runInstall(force) {
     }
   } catch { /* claude CLI not available, skip */ }
 
+  // ─── Step 2b: Framer Motion ───
+  try {
+    const pkg = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8"));
+    const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+    if (!allDeps["framer-motion"]) {
+      log(`  ${YELLOW}Framer Motion${RESET} is needed for designer agent animations.`);
+      log(`  ${DIM}Used by: designer (entrance, scroll, hover, page transitions)${RESET}\n`);
+      const answer = await ask(`  Install Framer Motion now? ${BOLD}(Y/n)${RESET} `);
+      if (answer === "" || answer === "y" || answer === "yes") {
+        const { execSync } = await import("child_process");
+        log(`\n  ${DIM}Running: npm install framer-motion${RESET}\n`);
+        try {
+          execSync("npm install framer-motion", { stdio: "inherit", cwd: process.cwd() });
+          log(`\n  ${GREEN}${BOLD}Framer Motion installed!${RESET}\n`);
+        } catch {
+          log(`\n  ${RED}Failed to install.${RESET} Run manually: ${BOLD}npm install framer-motion${RESET}\n`);
+        }
+      } else {
+        log(`\n  ${DIM}Skipped. Run later: npm install framer-motion${RESET}\n`);
+      }
+    } else {
+      log(`  ${GREEN}Framer Motion:${RESET} installed ✓\n`);
+    }
+  } catch { /* no package.json, skip */ }
+
+  // ─── Step 2c: GitHub CLI ───
+  try {
+    const { execSync } = await import("child_process");
+    execSync("which gh 2>/dev/null", { encoding: "utf8" });
+    log(`  ${GREEN}GitHub CLI:${RESET} installed ✓\n`);
+  } catch {
+    log(`  ${YELLOW}GitHub CLI (gh)${RESET} is needed for shipper agent PR creation.`);
+    log(`  ${DIM}Used by: shipper (gh pr create, auto push + PR)${RESET}\n`);
+    const answer = await ask(`  Install GitHub CLI now? ${BOLD}(Y/n)${RESET} `);
+    if (answer === "" || answer === "y" || answer === "yes") {
+      try {
+        const { execSync } = await import("child_process");
+        const platform = process.platform;
+        if (platform === "darwin") {
+          log(`\n  ${DIM}Running: brew install gh${RESET}\n`);
+          execSync("brew install gh", { stdio: "inherit" });
+        } else if (platform === "linux") {
+          log(`\n  ${DIM}Running: sudo apt install gh${RESET}\n`);
+          execSync("sudo apt install gh -y", { stdio: "inherit" });
+        } else {
+          log(`\n  ${DIM}Visit: https://cli.github.com/${RESET}\n`);
+        }
+        log(`\n  ${GREEN}${BOLD}GitHub CLI installed!${RESET} Run ${BOLD}gh auth login${RESET} to authenticate.\n`);
+      } catch {
+        log(`\n  ${RED}Failed to install.${RESET} Visit: ${BOLD}https://cli.github.com/${RESET}\n`);
+      }
+    } else {
+      log(`\n  ${DIM}Skipped. Without gh, shipper will output PR description for manual creation.${RESET}\n`);
+    }
+  }
+
   // ─── Step 3: Project harness ───
   if (!(await exists(join(HARNESS_DIR, "project.md")))) {
     const initAnswer = await ask(`  Generate project harness? ${DIM}(auto-detects your stack)${RESET} ${BOLD}(Y/n)${RESET} `);
