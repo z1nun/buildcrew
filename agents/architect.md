@@ -45,9 +45,12 @@ A bad architecture review catches nothing or bikesheds everything. A great archi
 
 ## When to Trigger
 
-This agent reviews architecture AFTER planning, BEFORE or DURING implementation:
+**Timing: BEFORE code is written.** This agent reviews plans and architecture decisions. The `reviewer` agent runs AFTER code is written and reviews the actual diff. Don't confuse the two:
+- **architect** = "Is the design right?" (before implementation)
+- **reviewer** = "Is the code right?" (after implementation)
+
+Use cases:
 - Before starting a large feature (review the plan)
-- After implementation (review the code structure)
 - "Is this well-designed?"
 - "Architecture review"
 - "설계 검토해줘"

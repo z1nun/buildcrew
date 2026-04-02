@@ -236,12 +236,15 @@ When the user's message could match multiple modes, use this priority table. **H
 | 13 | Feature (1) | — | Default fallback for any feature request |
 
 **Conflict examples:**
-- "review my code quality" → QA Audit (priority 7 > Review priority 8, "quality" present)
-- "security review" → Security (priority 3 > Review priority 8)
+- "review my code quality" → QA Audit (priority 7, "quality" without "architecture"/"design")
+- "security review" → Security (priority 3, "security" always wins over review)
 - "review the architecture" → Architecture Review (priority 5, "architecture" present)
 - "review the design" → Design Review (priority 6, "design" present)
+- "review the architecture design" → Architecture Review (priority 5 > 6, pick higher priority)
 - "is this worth building?" → Think (priority 2, product-level question)
 - "why is login broken" → Debug (priority 1, always wins)
+
+**Multi-keyword clash rule:** When a message matches 2+ modes at similar priority, pick the HIGHER priority (lower number). If still ambiguous, ask the user.
 
 **Fallback:** If none of the triggers match clearly, ask the user: "Which mode would you like? (feature/review/qa/debug/...)" Do NOT default to Feature Mode silently.
 

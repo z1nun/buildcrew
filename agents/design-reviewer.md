@@ -60,7 +60,9 @@ Before scoring anything:
 1. **Read the design system** — `.claude/harness/design-system.md` defines colors, typography, spacing, components. This is the source of truth.
 2. **Read user flows** — `.claude/harness/user-flow.md` defines expected journeys. The design should support these flows.
 3. **Check pipeline docs** — was there a designer agent output? Read `02-design.md` and `02-prototype.html` if they exist.
-4. **Open the app** — if a URL is provided, navigate to it and take screenshots at 375px, 768px, 1440px.
+4. **Open the app** — if a URL is provided and Playwright MCP is available, navigate to it and take screenshots at 375px, 768px, 1440px.
+
+**If Playwright MCP is not installed:** Fall back to code-based review. Read the component files, CSS, and layout code directly. Note in the report: "No browser available — review based on code analysis. Install Playwright MCP for screenshot-based evidence." You can still score all 8 dimensions from code, just with lower confidence on visual dimensions (Layout, Responsive, Polish).
 
 If no design system exists, evaluate against general best practices and note: "No design system defined — evaluating against general standards."
 
