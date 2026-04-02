@@ -303,16 +303,37 @@ ${d.hasAI ? "- AI-generated content treated as untrusted (sanitize before render
   if (d.apiRoutes.length > 0) log(`  ${CYAN}API Routes${RESET}  ${d.apiRoutes.length} found`);
   if (d.locales.length > 0) log(`  ${CYAN}Locales${RESET}     ${d.locales.join(", ")}`);
 
-  // Available extras
+  // Interactive: offer remaining templates
   const remaining = Object.entries(TEMPLATES).filter(([name, t]) => t.file && !autoTemplates.includes(name));
   if (remaining.length > 0) {
-    log(`\n  ${BOLD}Add more:${RESET}`);
-    for (const [name, t] of remaining) {
-      log(`  ${DIM}npx buildcrew add ${CYAN}${name}${RESET}`);
+    log(`\n  ${BOLD}Additional harness files available:${RESET}\n`);
+    for (let i = 0; i < remaining.length; i++) {
+      const [name, t] = remaining[i];
+      log(`    ${BOLD}${i + 1})${RESET} ${CYAN}${name}${RESET} — ${DIM}${t.desc}${RESET}`);
+    }
+    log(`    ${BOLD}A)${RESET} All of the above`);
+    log(`    ${BOLD}S)${RESET} Skip\n`);
+
+    const answer = await ask(`  Which ones? ${DIM}(numbers separated by space, A for all, S to skip)${RESET} `);
+
+    if (answer === "a" || answer === "all") {
+      for (const [name, t] of remaining) {
+        await copyFile(join(TEMPLATES_SRC, t.file), join(HARNESS_DIR, `${name}.md`));
+        log(`  ${GREEN} + ${RESET} ${name}.md`);
+      }
+      log("");
+    } else if (answer && answer !== "s" && answer !== "skip") {
+      const nums = answer.split(/[\s,]+/).map(n => parseInt(n) - 1).filter(n => n >= 0 && n < remaining.length);
+      for (const idx of nums) {
+        const [name, t] = remaining[idx];
+        await copyFile(join(TEMPLATES_SRC, t.file), join(HARNESS_DIR, `${name}.md`));
+        log(`  ${GREEN} + ${RESET} ${name}.md`);
+      }
+      if (nums.length > 0) log("");
     }
   }
 
-  log(`\n  ${BOLD}Next step:${RESET} Edit ${CYAN}.claude/harness/*.md${RESET} to fill in project-specific details.`);
+  log(`  ${BOLD}Next step:${RESET} Edit ${CYAN}.claude/harness/*.md${RESET} — fill in project-specific details.`);
   log(`  ${DIM}Look for <!-- comments --> — those are the parts to customize.${RESET}\n`);
 }
 
