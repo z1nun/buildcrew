@@ -450,13 +450,16 @@ async function runInstall(force) {
     log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
   }
 
-  // Check Playwright MCP
+  // Check Playwright MCP (required for browser-qa, design-reviewer, canary-monitor, designer)
   try {
     const { execSync } = await import("child_process");
     const mcpList = execSync("claude mcp list 2>/dev/null", { encoding: "utf8" });
     if (!mcpList.includes("playwright")) {
-      log(`  ${YELLOW}Optional:${RESET} Enable real browser testing (browser-qa, designer, canary-monitor):`);
-      log(`  ${DIM}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+      log(`  ${RED}${BOLD}Required:${RESET} Playwright MCP is needed for browser testing agents:`);
+      log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+      log(`  ${DIM}Used by: browser-qa, design-reviewer, canary-monitor, designer${RESET}\n`);
+    } else {
+      log(`  ${GREEN}Playwright MCP:${RESET} installed ✓\n`);
     }
   } catch { /* claude CLI not available, skip */ }
 

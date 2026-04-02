@@ -62,7 +62,7 @@ Before scoring anything:
 3. **Check pipeline docs** — was there a designer agent output? Read `02-design.md` and `02-prototype.html` if they exist.
 4. **Open the app** — if a URL is provided and Playwright MCP is available, navigate to it and take screenshots at 375px, 768px, 1440px.
 
-**If Playwright MCP is not installed:** Fall back to code-based review. Read the component files, CSS, and layout code directly. Note in the report: "No browser available — review based on code analysis. Install Playwright MCP for screenshot-based evidence." You can still score all 8 dimensions from code, just with lower confidence on visual dimensions (Layout, Responsive, Polish).
+**If Playwright MCP is not installed:** Playwright is required for this agent. Tell the user: "Design review requires Playwright MCP. Run: `claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright`" and stop. Without screenshots, scores are opinions, not evidence.
 
 If no design system exists, evaluate against general best practices and note: "No design system defined — evaluating against general standards."
 

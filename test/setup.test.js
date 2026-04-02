@@ -86,7 +86,7 @@ describe('agent files', () => {
   it('buildcrew orchestrator has Status Log and Rules sections', () => {
     const content = readFileSync(join(AGENTS_DIR, 'buildcrew.md'), 'utf8');
     expect(content).toContain('Status Log');
-    expect(content).toContain('Handoff Protocol');
+    expect(content).toContain('## Rules');
   });
 });
 
