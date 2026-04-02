@@ -118,7 +118,7 @@ echo "# Notes" > .claude/harness/my-notes.md  # Or create your own
 | Agent | Model | Role |
 |-------|-------|------|
 | **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Plans scored 1-10 per lens. |
-| **designer** | opus | Web research for UI/UX references → Playwright screenshots → Figma MCP → production components. AI slop blacklist. |
+| **designer** | opus | UI/UX research + motion engineering → Playwright screenshots → Figma MCP → production components with animations, scroll effects, gestures. AI slop blacklist. |
 | **developer** | sonnet | Implements features following plan + design + harness conventions. |
 
 ### Quality Team
@@ -162,6 +162,14 @@ Talk to `@buildcrew` naturally. It auto-detects the mode.
 | **Review** | "code review" | Multi-specialist analysis + auto-fix |
 | **Ship** | "ship" | Test → version → changelog → PR |
 
+### Iterations
+
+Each iteration runs the **full end-to-end pipeline** — planner re-evaluates, designer refines, developer fixes, QA re-verifies:
+
+```
+@buildcrew Add user dashboard, 5 iterations
+```
+
 ### Mode chaining
 
 Auto-suggests the next mode:
@@ -192,7 +200,7 @@ Each feature generates a full document chain:
 
 | Command | Description |
 |---------|-------------|
-| `npx buildcrew` | Install 11 agents |
+| `npx buildcrew` | Install agents (11 + orchestrator) |
 | `npx buildcrew init` | Auto-generate harness (zero questions) |
 | `npx buildcrew init --force` | Regenerate harness |
 | `npx buildcrew add` | List harness templates |
@@ -222,6 +230,25 @@ claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright
 .claude/pipeline/    Output documents — auto-generated per feature
 ```
 
+## Real-time Status
+
+Every agent outputs emoji-tagged progress logs so you can track what's happening:
+
+```
+📋 PLANNER — Starting requirements analysis for "user dashboard"
+🔍 Reading project harness...
+🧠 Phase 1: Asking 6 Forcing Questions...
+🔎 Phase 3: 4-Lens Self-Review...
+   🏢 CEO Review: 8/10
+   ⚙️ Engineering Review: 9/10
+✅ PLANNER — Complete (avg score: 8.5/10)
+
+🎨 DESIGNER — Starting UI/UX design...
+💻 DEVELOPER — Starting implementation...
+🧪 QA TESTER — 11/12 passed, 1 issue found
+🔬 REVIEWER — APPROVE
+```
+
 ## Architecture
 
 ```
@@ -230,7 +257,7 @@ claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright
     ├─ reads .claude/harness/*.md
     ├─ detects mode from user message
     ├─ dispatches agents with harness context
-    └─ enforces quality gates + iteration
+    └─ enforces quality gates + full end-to-end iteration
          │
          ├── Build:    planner → designer → developer
          ├── Quality:  qa-tester → browser-qa → reviewer

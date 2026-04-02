@@ -118,7 +118,7 @@ echo "# 메모" > .claude/harness/내메모.md  # 직접 생성도 가능
 | 에이전트 | 모델 | 역할 |
 |---------|------|------|
 | **planner** | opus | 6가지 강제 질문 + 4관점 자체 리뷰 (CEO, 엔지니어링, 디자인, QA). 관점별 1-10점. |
-| **designer** | opus | 웹에서 UI/UX 레퍼런스 수집 → Playwright 스크린샷 → Figma MCP → 프로덕션 컴포넌트. AI 슬롭 블랙리스트. |
+| **designer** | opus | UI/UX 레퍼런스 수집 + 모션 엔지니어링 → Playwright 스크린샷 → Figma MCP → 애니메이션, 스크롤 이펙트, 제스처가 포함된 프로덕션 컴포넌트. AI 슬롭 블랙리스트. |
 | **developer** | sonnet | 기획서 + 디자인 + 하네스 규칙에 따라 구현. |
 
 ### 품질 팀
@@ -162,6 +162,14 @@ echo "# 메모" > .claude/harness/내메모.md  # 직접 생성도 가능
 | **Review** | "코드 리뷰해줘" | 멀티 전문가 + 적대적 + 자동 수정 |
 | **Ship** | "배포해줘" | 테스트 → 버전 → 체인지로그 → PR |
 
+### 반복 (Iterations)
+
+매 반복마다 **전체 파이프라인**을 처음부터 다시 실행 — 기획자가 이전 결과를 리뷰하고 계획을 수정합니다:
+
+```
+@buildcrew 유저 대시보드 추가해줘, 5 iterations
+```
+
 ### 모드 체이닝
 
 Feature 완료 → Ship → Canary. Canary CRITICAL → Debug.
@@ -188,7 +196,7 @@ Feature 완료 → Ship → Canary. Canary CRITICAL → Debug.
 
 | 명령어 | 설명 |
 |--------|------|
-| `npx buildcrew` | 11개 에이전트 설치 |
+| `npx buildcrew` | 에이전트 설치 (11 + 오케스트레이터) |
 | `npx buildcrew init` | 하네스 자동 생성 (질문 없음) |
 | `npx buildcrew init --force` | 하네스 재생성 |
 | `npx buildcrew add` | 템플릿 목록 |
@@ -203,6 +211,22 @@ Feature 완료 → Ship → Canary. Canary CRITICAL → Debug.
 - **필수**: [Claude Code](https://claude.ai/code) CLI
 - **선택**: [Playwright MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/playwright) — browser-qa, canary-monitor, designer
 - **선택**: [Figma MCP](https://github.com/anthropics/anthropic-quickstarts/tree/main/mcp-servers/figma) — designer
+
+## 실시간 상태 로그
+
+모든 에이전트가 이모지 태그된 진행 로그를 출력합니다:
+
+```
+📋 PLANNER — "유저 대시보드" 요구사항 분석 시작
+🔎 4관점 자체 리뷰...
+   🏢 CEO: 8/10  ⚙️ 엔지니어링: 9/10
+✅ PLANNER — 완료
+
+🎨 DESIGNER — UI/UX 디자인 시작...
+💻 DEVELOPER — 구현 시작...
+🧪 QA TESTER — 11/12 통과, 1건 발견
+🔬 REVIEWER — 승인
+```
 
 ## 라이선스
 
