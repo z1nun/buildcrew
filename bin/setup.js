@@ -150,10 +150,23 @@ async function detectProject() {
 async function runInit(force) {
   log(`\n  ${BOLD}buildcrew init${RESET} v${VERSION}\n`);
 
-  if ((await exists(join(HARNESS_DIR, "project.md"))) && !force) {
+  const harnessExists = await exists(join(HARNESS_DIR, "project.md"));
+
+  if (harnessExists && !force) {
     log(`  ${YELLOW}Harness already exists at .claude/harness/${RESET}`);
     log(`  ${DIM}Use ${BOLD}--force${RESET}${DIM} to regenerate. Or just edit the files directly.${RESET}\n`);
     return;
+  }
+
+  // Backup existing harness before overwriting
+  if (harnessExists && force) {
+    const backupDir = join(process.cwd(), ".claude", "harness-backup");
+    await mkdir(backupDir, { recursive: true });
+    const harnessFiles = (await readdir(HARNESS_DIR)).filter(f => f.endsWith(".md"));
+    for (const file of harnessFiles) {
+      await copyFile(join(HARNESS_DIR, file), join(backupDir, file));
+    }
+    log(`  ${CYAN}Backed up ${harnessFiles.length} harness files → .claude/harness-backup/${RESET}\n`);
   }
 
   log(`  ${DIM}Scanning project...${RESET}\n`);
@@ -329,9 +342,18 @@ async function runAdd(type, force) {
   }
 
   const target = join(HARNESS_DIR, `${type}.md`);
-  if ((await exists(target)) && !force) {
+  const targetExists = await exists(target);
+  if (targetExists && !force) {
     log(`\n  ${YELLOW}${type}.md already exists.${RESET} Use ${BOLD}--force${RESET} to overwrite.\n`);
     return;
+  }
+
+  // Backup before overwriting
+  if (targetExists && force) {
+    const backupDir = join(process.cwd(), ".claude", "harness-backup");
+    await mkdir(backupDir, { recursive: true });
+    await copyFile(target, join(backupDir, `${type}.md`));
+    log(`\n  ${CYAN}Backed up ${type}.md → .claude/harness-backup/${RESET}`);
   }
 
   await mkdir(HARNESS_DIR, { recursive: true });
