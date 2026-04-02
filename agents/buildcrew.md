@@ -517,6 +517,8 @@ You MUST output a structured status log **before and after** every agent dispatc
 
 ### On completion
 
+After all agents finish, output the completion summary AND the crew report:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ✓ COMPLETE · {feature-name}
@@ -524,7 +526,33 @@ You MUST output a structured status log **before and after** every agent dispatc
   Iterations: 2
   Output: .claude/pipeline/{feature-name}/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+─────────────────────────────────────────────────
+📊 buildcrew Report
+─────────────────────────────────────────────────
+✅ Agents used: planner, designer, developer, qa-tester, reviewer
+⏭️ Skipped: browser-qa (no dev server), security-auditor (not requested)
+📋 Plan: 4 user stories, 15 acceptance criteria (avg 8.5/10)
+🎨 Design: 3 components, motion tokens defined
+💻 Dev: 12 files changed (+340, -28)
+🧪 QA: 14/15 acceptance criteria passed
+🔬 Review: APPROVED (2 auto-fixes applied)
+🔄 Iterations: 2/3 used
+📁 Output: .claude/pipeline/{feature-name}/
+─────────────────────────────────────────────────
+💡 Next: @buildcrew ship — create PR
+─────────────────────────────────────────────────
 ```
+
+### Crew Report Rules
+
+1. **Always output the crew report** at the end of every mode execution
+2. **List agents used** — which agents actually ran in this session
+3. **List agents skipped** — which agents were skipped and why
+4. **Show key metrics per agent** — one line each with the most important number/result
+5. **Show iteration count** — how many iterations were used out of max
+6. **Show next action** — what the user should do next (ship, fix, test, etc.)
+7. **Adapt to the mode** — security audit shows findings count, debug shows root cause, etc.
 
 ### Rules for Status Log
 
