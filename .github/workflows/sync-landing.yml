@@ -1,10 +1,14 @@
-name: Sync Landing Page
+name: Sync to Landing Page
 
 on:
   push:
     branches: [main]
     paths:
-      - '.github/landing.html'
+      - 'agents/**'
+      - 'README.md'
+      - 'README.ko.md'
+      - 'ARCHITECTURE.md'
+      - 'package.json'
 
 jobs:
   sync:
@@ -12,15 +16,169 @@ jobs:
     steps:
       - name: Checkout buildcrew
         uses: actions/checkout@v4
-
-      - name: Push to landing repo
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.LANDING_SYNC_TOKEN }}
         with:
-          source_file: '.github/landing.html'
-          destination_repo: 'z1nun/buildcrew-landing'
-          destination_file: 'index.html'
-          user_email: 'z1nun@users.noreply.github.com'
-          user_name: 'z1nun'
-          commit_message: 'sync: update landing page from buildcrew'
+          path: buildcrew
+
+      - name: Checkout landing
+        uses: actions/checkout@v4
+        with:
+          repository: z1nun/buildcrew-landing
+          token: ${{ secrets.LANDING_SYNC_TOKEN }}
+          path: landing
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync content
+        run: |
+          VERSION=$(node -p "require('./buildcrew/package.json').version")
+
+          # ─── Sync agent pages ───
+          for agent_file in buildcrew/agents/*.md; do
+            name=$(basename "$agent_file" .md)
+            [ "$name" = "buildcrew" ] && continue
+
+            title=$(grep "^name:" "$agent_file" | head -1 | sed 's/name: //')
+            model=$(grep "^model:" "$agent_file" | head -1 | sed 's/model: //')
+            desc=$(grep "^description:" "$agent_file" | head -1 | sed 's/description: //')
+
+            # Extract content after second ---
+            content=$(awk 'BEGIN{n=0} /^---$/{n++; if(n==2){found=1; next}} found{print}' "$agent_file")
+
+            cat > "landing/pages/agents/${name}.mdx" <<EOF
+          ---
+          title: "${title}"
+          ---
+
+          import { Callout } from 'nextra/components'
+
+          # ${title} \`${model}\`
+
+          > ${desc}
+
+          ${content}
+          EOF
+          done
+
+          # ─── Update agents _meta.json ───
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const agents = fs.readdirSync('buildcrew/agents')
+            .filter(f => f.endsWith('.md') && f !== 'buildcrew.md')
+            .map(f => {
+              const content = fs.readFileSync(path.join('buildcrew/agents', f), 'utf8');
+              const name = f.replace('.md', '');
+              const title = (content.match(/^name:\s*(.+)$/m) || [])[1] || name;
+              return { name, title };
+            });
+          const meta = { index: 'Overview' };
+          agents.forEach(a => meta[a.name] = a.title);
+          fs.writeFileSync('landing/pages/agents/_meta.json', JSON.stringify(meta, null, 2));
+          "
+
+          # ─── Sync new mode pages ───
+          for mode in qa-audit think arch-review design-review; do
+            if [ ! -f "landing/pages/modes/${mode}.mdx" ]; then
+              case "$mode" in
+                qa-audit)
+                  TITLE="QA Audit"; TRIGGER="@buildcrew qa"; DESC="3 parallel subagents audit git diffs against design docs." ;;
+                think)
+                  TITLE="Think"; TRIGGER="@buildcrew think: should we add notifications?"; DESC="6 forcing questions, premise challenge, 3 alternatives, design doc output." ;;
+                arch-review)
+                  TITLE="Architecture Review"; TRIGGER="@buildcrew architecture review"; DESC="Scope challenge, component diagrams, data flow, failure modes, test coverage map." ;;
+                design-review)
+                  TITLE="Design Review"; TRIGGER="@buildcrew design review http://localhost:3000"; DESC="8 UX dimensions scored 0-10, screenshot evidence, specific fixes." ;;
+              esac
+              cat > "landing/pages/modes/${mode}.mdx" <<EOF
+          ---
+          title: "${TITLE} Mode"
+          ---
+
+          # ${TITLE} Mode
+
+          ${DESC}
+
+          ## Trigger
+          \`\`\`
+          ${TRIGGER}
+          \`\`\`
+
+          See the [${TITLE%% *} agent](/agents) for full methodology.
+
+          ---
+          *Synced from buildcrew v${VERSION}*
+          EOF
+            fi
+          done
+
+          # ─── Update modes _meta.json ───
+          cat > "landing/pages/modes/_meta.json" <<'EOF'
+          {
+            "index": "Overview",
+            "feature": "Feature",
+            "audit": "Project Audit",
+            "browser-qa": "Browser QA",
+            "security": "Security",
+            "debug": "Debug",
+            "health": "Health Check",
+            "canary": "Canary",
+            "review": "Review",
+            "ship": "Ship",
+            "qa-audit": "QA Audit",
+            "think": "Think",
+            "arch-review": "Architecture Review",
+            "design-review": "Design Review"
+          }
+          EOF
+
+          # ─── Sync ARCHITECTURE.md ───
+          {
+            echo '---'
+            echo 'title: Architecture'
+            echo '---'
+            echo ''
+            cat buildcrew/ARCHITECTURE.md
+          } > landing/pages/architecture.mdx
+
+          # ─── Update theme.config.tsx ───
+          sed -i "s/[0-9]* AI agents/15 AI agents/g" landing/theme.config.tsx
+
+      - name: Create PR
+        run: |
+          cd landing
+          VERSION=$(node -p "require('../buildcrew/package.json').version")
+          BRANCH="sync/v${VERSION}-$(date +%Y%m%d%H%M%S)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "No changes to sync"
+            exit 0
+          fi
+
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "sync: buildcrew v${VERSION}"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --repo z1nun/buildcrew-landing \
+            --title "sync: buildcrew v${VERSION}" \
+            --body "$(cat <<PRBODY
+          ## Auto-synced from buildcrew v${VERSION}
+
+          **Changes:**
+          - Agent pages: synced from \`agents/*.md\`
+          - Mode pages: 13 modes (4 new: QA Audit, Think, Arch Review, Design Review)
+          - Architecture page: synced from \`ARCHITECTURE.md\`
+          - Theme config: agent count updated
+
+          [View buildcrew repo](https://github.com/z1nun/buildcrew)
+          PRBODY
+          )"
+        env:
+          GH_TOKEN: ${{ secrets.LANDING_SYNC_TOKEN }}
