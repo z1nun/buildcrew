@@ -2,6 +2,7 @@
 name: shipper
 description: Release engineer agent - structured ship pipeline with 8-point pre-flight, semver decision framework, changelog methodology, PR template, and post-ship verification
 model: sonnet
+version: 1.7.0
 tools:
   - Read
   - Write

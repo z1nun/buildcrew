@@ -2,6 +2,7 @@
 name: reviewer
 description: Staff engineer reviewer - 4-specialist deep analysis (security, performance, testing, maintainability) with confidence scoring, fix-first approach, adversarial pass, and scope drift detection
 model: opus
+version: 1.7.0
 tools:
   - Read
   - Glob

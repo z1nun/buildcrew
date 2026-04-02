@@ -1,7 +1,7 @@
 {
   "name": "buildcrew",
-  "version": "1.6.0",
-  "description": "11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes",
+  "version": "1.7.0",
+  "description": "12 AI agents for Claude Code — auto-orchestrated dev team with 10 operating modes",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",
   "license": "MIT",
@@ -32,6 +32,12 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/z1nun/buildcrew.git"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=18"

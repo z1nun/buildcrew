@@ -393,7 +393,7 @@ async function runHarnessStatus() {
 
 async function runInstall(force) {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
-  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}11 AI agents for Claude Code${RESET}\n`);
+  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}12 AI agents for Claude Code${RESET}\n`);
 
   await mkdir(TARGET_DIR, { recursive: true });
 
@@ -408,19 +408,43 @@ async function runInstall(force) {
     }
   }
 
-  let installed = 0, skipped = 0;
+  let installed = 0, skipped = 0, updated = 0;
 
   for (const file of files) {
     const target = join(TARGET_DIR, file);
-    if ((await exists(target)) && !force) { skipped++; continue; }
-    await copyFile(join(AGENTS_SRC, file), target);
-    log(`  ${GREEN} + ${RESET} ${file}`);
-    installed++;
+    if (await exists(target)) {
+      if (force) {
+        await copyFile(join(AGENTS_SRC, file), target);
+        log(`  ${GREEN} + ${RESET} ${file} ${DIM}(overwritten)${RESET}`);
+        installed++;
+      } else {
+        // Check version: compare installed vs source
+        const installedContent = await readFile(target, "utf8");
+        const sourceContent = await readFile(join(AGENTS_SRC, file), "utf8");
+        const installedVer = (installedContent.match(/^version:\s*(.+)$/m) || [])[1];
+        const sourceVer = (sourceContent.match(/^version:\s*(.+)$/m) || [])[1];
+        if (sourceVer && installedVer && sourceVer !== installedVer) {
+          await copyFile(join(AGENTS_SRC, file), target);
+          log(`  ${CYAN} ↑ ${RESET} ${file} ${DIM}(${installedVer} → ${sourceVer})${RESET}`);
+          updated++;
+        } else {
+          skipped++;
+        }
+      }
+    } else {
+      await copyFile(join(AGENTS_SRC, file), target);
+      log(`  ${GREEN} + ${RESET} ${file}`);
+      installed++;
+    }
   }
 
   log("");
-  if (installed > 0) log(`  ${GREEN}${BOLD}Done!${RESET} ${installed} agents installed.${skipped > 0 ? ` ${skipped} skipped.` : ""}\n`);
-  else log(`  ${YELLOW}All agents already exist.${RESET} Use ${BOLD}--force${RESET} to overwrite.\n`);
+  const parts = [];
+  if (installed > 0) parts.push(`${installed} installed`);
+  if (updated > 0) parts.push(`${updated} updated`);
+  if (skipped > 0) parts.push(`${skipped} up-to-date`);
+  if (installed > 0 || updated > 0) log(`  ${GREEN}${BOLD}Done!${RESET} ${parts.join(", ")}.\n`);
+  else log(`  ${GREEN}All agents up-to-date.${RESET} (v${VERSION})\n`);
 
   if (!(await exists(join(HARNESS_DIR, "project.md")))) {
     log(`  ${CYAN}Next:${RESET} ${BOLD}npx buildcrew init${RESET} — auto-generates project harness from your codebase.\n`);
@@ -443,7 +467,7 @@ async function runInstall(force) {
 
 async function runList() {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
-  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION} — 11 agents\n`);
+  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION} — ${files.length} agents\n`);
   for (const file of files) {
     const content = await readFile(join(AGENTS_SRC, file), "utf8");
     const name = (content.match(/^name:\s*(.+)$/m) || [])[1] || file.replace(".md", "");
@@ -478,7 +502,7 @@ async function main() {
 
   if (args.includes("--help") || args.includes("-h")) {
     log(`
-  ${BOLD}buildcrew${RESET} v${VERSION} — 11 AI agents for Claude Code
+  ${BOLD}buildcrew${RESET} v${VERSION} — 12 AI agents for Claude Code
 
   ${BOLD}Commands:${RESET}
     npx buildcrew              Install agents
@@ -512,6 +536,9 @@ async function main() {
 
   return runInstall(force);
 }
+
+// Export for testing
+export { detectProject, exists, TEMPLATES };
 
 main().catch(err => {
   console.error(`${RED}Error:${RESET} ${err.message}`);

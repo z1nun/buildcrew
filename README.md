@@ -2,7 +2,7 @@
 
 > **English** | [한국어](README.ko.md) | [Docs](https://buildcrew-landing.vercel.app)
 
-11 AI agents for Claude Code — auto-orchestrated dev team with 9 operating modes.
+12 AI agents for Claude Code — auto-orchestrated dev team with 10 operating modes.
 
 ```bash
 npx buildcrew
@@ -14,7 +14,7 @@ npx buildcrew
 
 AI coding agents are powerful, but without structure they produce inconsistent results. buildcrew gives Claude Code:
 
-- **A team** — 11 specialized agents (5 opus + 6 sonnet), each with a clear role
+- **A team** — 12 specialized agents (6 opus + 6 sonnet), each with a clear role
 - **A process** — sequential pipeline with quality gates and iteration
 - **A harness** — your project context auto-detected from your codebase
 - **An orchestrator** — just talk to `@buildcrew`, it routes automatically

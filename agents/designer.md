@@ -2,6 +2,7 @@
 name: designer
 description: UI/UX designer & motion engineer (opus) - researches references, designs with Figma MCP, builds production components with animations, scroll effects, gestures, and interactive elements
 model: opus
+version: 1.7.0
 tools:
   - Read
   - Write
