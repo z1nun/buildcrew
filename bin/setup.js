@@ -27,6 +27,14 @@ async function exists(path) {
   try { await access(path); return true; } catch { return false; }
 }
 
+async function ask(question) {
+  const { createInterface } = await import("readline");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => {
+    rl.question(question, answer => { rl.close(); resolve(answer.trim().toLowerCase()); });
+  });
+}
+
 // ─── Template registry ───
 
 const TEMPLATES = {
@@ -455,9 +463,22 @@ async function runInstall(force) {
     const { execSync } = await import("child_process");
     const mcpList = execSync("claude mcp list 2>/dev/null", { encoding: "utf8" });
     if (!mcpList.includes("playwright")) {
-      log(`  ${RED}${BOLD}Required:${RESET} Playwright MCP is needed for browser testing agents:`);
-      log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+      log(`\n  ${YELLOW}Playwright MCP${RESET} is needed for browser testing agents.`);
       log(`  ${DIM}Used by: browser-qa, design-reviewer, canary-monitor, designer${RESET}\n`);
+      const answer = await ask(`  Install Playwright MCP now? ${BOLD}(Y/n)${RESET} `);
+      if (answer === "" || answer === "y" || answer === "yes") {
+        log(`\n  ${DIM}Running: claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+        try {
+          execSync("claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright", { stdio: "inherit" });
+          log(`\n  ${GREEN}${BOLD}Playwright MCP installed!${RESET}\n`);
+        } catch {
+          log(`\n  ${RED}Failed to install.${RESET} Run manually:`);
+          log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+        }
+      } else {
+        log(`\n  ${DIM}Skipped. Install later with:${RESET}`);
+        log(`  ${BOLD}claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright${RESET}\n`);
+      }
     } else {
       log(`  ${GREEN}Playwright MCP:${RESET} installed ✓\n`);
     }
