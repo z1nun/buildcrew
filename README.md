@@ -245,3 +245,5 @@ Agents include version headers. When you run `npx buildcrew` on an existing proj
 ## License
 
 MIT
+
+<!-- v1.8.5 -->
