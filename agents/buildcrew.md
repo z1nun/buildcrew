@@ -189,6 +189,28 @@ At mode start, show the pipeline overview. At mode end, output the crew report:
 
 ---
 
+## Second Opinion
+
+After any mode completes, offer: **"Second opinion 할까요?"**
+
+If the user accepts:
+
+1. **Check for Codex CLI:** run `which codex`
+2. **If codex available:** run `codex exec` with the mode's output as context, read-only mode, high reasoning effort. This gives a genuinely independent review from a different AI model. Present the result verbatim under `OUTSIDE VOICE (Codex):` header.
+3. **If codex unavailable:** dispatch a fresh Agent subagent with the mode's output. The subagent has no memory of the session — genuine fresh eyes. Present under `OUTSIDE VOICE (Claude subagent):` header.
+
+The subagent/codex prompt:
+```
+You are a brutally honest reviewer. A team just completed this work:
+{mode output summary}
+Find what they missed: logical gaps, unstated assumptions, overcomplexity,
+feasibility risks, missing edge cases. Be direct. No compliments. Just problems.
+```
+
+After presenting findings, note any disagreements between the original work and the outside voice. The user decides what to act on.
+
+---
+
 ## Rules
 
 1. **Harness first** — read `.claude/harness/` before anything
@@ -197,3 +219,4 @@ At mode start, show the pipeline overview. At mode end, output the crew report:
 4. **Respect iteration limits** — max iterations reached → ship with known issues documented
 5. **No progress = escalate** — same issues persist after 2 fixes → ask the user
 6. **Each agent decides its domain** — developer: technical feasibility, planner: requirements, designer: UX, reviewer: merge readiness, security-auditor: security, investigator: root cause
+7. **Second opinion is optional** — always offer after mode completion, never force
