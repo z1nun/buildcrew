@@ -119,15 +119,15 @@ echo "# Notes" > .claude/harness/my-notes.md  # Or create your own
 |-------|-------|------|
 | **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Plans scored 1-10 per lens. |
 | **designer** | opus | UI/UX research + motion engineering → Playwright screenshots → Figma MCP → production components with animations, scroll effects, gestures. AI slop blacklist. |
-| **developer** | sonnet | Implements features following plan + design + harness conventions. |
+| **developer** | sonnet | 6 Implementation Questions + 3-Lens Self-Review (Architecture, Code Quality, Safety). Error Handling Protocol. 3 modes: feature, bugfix, iteration. |
 
 ### Quality Team
 
 | Agent | Model | Role |
 |-------|-------|------|
-| **qa-tester** | sonnet | Code-level verification — types, lint, build, acceptance criteria. |
+| **qa-tester** | sonnet | 5 Test Strategy Questions + Test Map methodology. Systematic edge case generation. Confidence-scored findings with severity classification. |
 | **browser-qa** | sonnet | Real browser testing via Playwright MCP — flows, responsive, console, health score (0-100). |
-| **reviewer** | opus | 4-specialist parallel review (security, perf, testing, maintainability) + adversarial pass + auto-fix. |
+| **reviewer** | opus | 4-specialist deep analysis (security, perf, testing, maintainability) with confidence scoring + scope drift detection + adversarial pass + fix-first approach. |
 | **health-checker** | sonnet | Code quality dashboard — 7-category weighted 0-10 score + trends. |
 
 ### Security & Ops
@@ -136,13 +136,13 @@ echo "# Notes" > .claude/harness/my-notes.md  # Or create your own
 |-------|-------|------|
 | **security-auditor** | opus | OWASP Top 10 + STRIDE threat model. 10-phase audit with confidence gate. |
 | **canary-monitor** | sonnet | Post-deploy health — pages, APIs, console, performance vs baseline. |
-| **shipper** | sonnet | Release pipeline — test → version bump → changelog → PR. |
+| **shipper** | sonnet | 8-point pre-flight + semver decision framework + changelog methodology + PR template + post-ship verification. |
 
 ### Specialist
 
 | Agent | Model | Role |
 |-------|-------|------|
-| **investigator** | sonnet | Root cause debugging. 4-phase investigation. Edit freeze on unrelated code. |
+| **investigator** | sonnet | 5 Evidence Sources + hypothesis scoring + 12 common bug patterns + regression prevention. Edit freeze on unrelated code. |
 
 ---
 
@@ -236,17 +236,20 @@ Every agent outputs emoji-tagged progress logs so you can track what's happening
 
 ```
 📋 PLANNER — Starting requirements analysis for "user dashboard"
-🔍 Reading project harness...
 🧠 Phase 1: Asking 6 Forcing Questions...
 🔎 Phase 3: 4-Lens Self-Review...
-   🏢 CEO Review: 8/10
-   ⚙️ Engineering Review: 9/10
+   🏢 CEO: 8/10  ⚙️ Engineering: 9/10  🎨 Design: 9/10  🧪 QA: 8/10
 ✅ PLANNER — Complete (avg score: 8.5/10)
 
 🎨 DESIGNER — Starting UI/UX design...
-💻 DEVELOPER — Starting implementation...
-🧪 QA TESTER — 11/12 passed, 1 issue found
-🔬 REVIEWER — APPROVE
+💻 DEVELOPER — Phase 1: 6 Implementation Questions...
+   🔍 Phase 2: Implementation...
+   🔎 Phase 3: 3-Lens Self-Review — Architecture: 8/10, Quality: 9/10, Safety: 7/10
+✅ DEVELOPER — Complete (12 files changed, avg: 8.0/10)
+
+🧪 QA TESTER — 5 Test Strategy Questions → Test Map built
+   ✅ AC-1: PASS  ❌ AC-2: FAIL (confidence: 9/10)
+🔬 REVIEWER — 4 specialists + adversarial — APPROVE (2 auto-fixed)
 ```
 
 ## Architecture
