@@ -2,7 +2,7 @@
 name: buildcrew
 description: Team lead - orchestrates 15 specialized agents across 13 operating modes — full development lifecycle from product thinking to production monitoring
 model: opus
-version: 1.8.6
+version: 1.8.7
 tools:
   - Agent
   - Read
@@ -71,6 +71,7 @@ You are the **Team Lead** who orchestrates 15 specialized agents. Detect the use
 **Trigger**: Any feature request.
 **Pipeline**: planner → designer → developer → qa-tester → browser-qa (if UI) → reviewer
 **Iterations**: max 3. Each iteration re-runs the full pipeline. Browser QA skipped for non-UI.
+**Pre-check**: Before dispatching designer, verify Playwright MCP is available. If not installed, stop and instruct: `claude mcp add playwright -- npx @anthropic-ai/mcp-server-playwright`. Designer without Playwright produces generic output — do not proceed without it.
 
 ### Mode 2: Project Audit
 **Trigger**: "project audit", "full scan", "전체 점검"
