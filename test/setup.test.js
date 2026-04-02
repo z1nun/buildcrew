@@ -11,8 +11,8 @@ const PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8
 const agentFiles = readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
 
 describe('agent files', () => {
-  it('has 13 agent files', () => {
-    expect(agentFiles).toHaveLength(13);
+  it('has 16 agent files', () => {
+    expect(agentFiles).toHaveLength(16);
   });
 
   it('all agents have valid YAML frontmatter', () => {
@@ -105,13 +105,23 @@ describe('model assignments', () => {
     const content = readFileSync(join(AGENTS_DIR, 'qa-auditor.md'), 'utf8');
     expect(content).toContain('model: opus');
   });
+
+  it('thinker is opus (product thinking)', () => {
+    const content = readFileSync(join(AGENTS_DIR, 'thinker.md'), 'utf8');
+    expect(content).toContain('model: opus');
+  });
+
+  it('architect is opus (architecture decisions)', () => {
+    const content = readFileSync(join(AGENTS_DIR, 'architect.md'), 'utf8');
+    expect(content).toContain('model: opus');
+  });
 });
 
 describe('buildcrew orchestrator', () => {
   const content = readFileSync(join(AGENTS_DIR, 'buildcrew.md'), 'utf8');
 
-  it('has all 10 modes defined', () => {
-    for (let i = 1; i <= 10; i++) {
+  it('has all 13 modes defined', () => {
+    for (let i = 1; i <= 13; i++) {
       expect(content, `missing Mode ${i}`).toContain(`Mode ${i}:`);
     }
   });
@@ -145,12 +155,8 @@ describe('templates', () => {
 });
 
 describe('package.json', () => {
-  it('description mentions 12 agents', () => {
-    expect(PKG.description).toContain('12');
-  });
-
-  it('description mentions 10 operating modes', () => {
-    expect(PKG.description).toContain('10');
+  it('description mentions 15 agents', () => {
+    expect(PKG.description).toContain('15');
   });
 
   it('has no runtime dependencies', () => {

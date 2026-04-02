@@ -2,7 +2,7 @@
 name: browser-qa
 description: Browser QA agent - structured 4-phase methodology (orient, explore, stress, judge) with Playwright MCP, confidence-scored findings, health score, and self-review
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Write

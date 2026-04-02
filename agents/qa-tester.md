@@ -2,7 +2,7 @@
 name: qa-tester
 description: QA tester agent - structured verification methodology with 5 test strategy questions, systematic edge case generation, severity classification, and confidence-scored findings
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Glob

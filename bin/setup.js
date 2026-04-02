@@ -393,7 +393,7 @@ async function runHarnessStatus() {
 
 async function runInstall(force) {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
-  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}12 AI agents for Claude Code${RESET}\n`);
+  log(`\n  ${BOLD}buildcrew${RESET} v${VERSION}\n  ${DIM}15 AI agents for Claude Code${RESET}\n`);
 
   await mkdir(TARGET_DIR, { recursive: true });
 
@@ -502,7 +502,7 @@ async function main() {
 
   if (args.includes("--help") || args.includes("-h")) {
     log(`
-  ${BOLD}buildcrew${RESET} v${VERSION} — 12 AI agents for Claude Code
+  ${BOLD}buildcrew${RESET} v${VERSION} — 15 AI agents for Claude Code
 
   ${BOLD}Commands:${RESET}
     npx buildcrew              Install agents

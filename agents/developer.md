@@ -2,7 +2,7 @@
 name: developer
 description: Senior developer agent - structured implementation methodology with 6 decision questions, 3-lens self-review, architecture-first approach, error path coverage, and harness-aware coding
 model: opus
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Write

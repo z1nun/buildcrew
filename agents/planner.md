@@ -2,7 +2,7 @@
 name: planner
 description: Product planner agent (opus) - multi-perspective planning with 4-lens review (product discovery, CEO challenge, engineering lock, design quality), produces battle-tested plans
 model: opus
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Write

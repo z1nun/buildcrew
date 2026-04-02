@@ -2,7 +2,7 @@
 name: canary-monitor
 description: Post-deploy canary monitor agent - structured 3-phase methodology (orient, verify, judge) with baseline comparison, confidence-scored findings, and self-review
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Write

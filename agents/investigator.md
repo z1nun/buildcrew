@@ -2,7 +2,7 @@
 name: investigator
 description: Systematic debugger agent - 4-phase root cause investigation with evidence protocol, hypothesis scoring, edit freeze, regression prevention, and 12 common bug patterns
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Glob

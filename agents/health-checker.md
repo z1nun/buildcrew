@@ -2,7 +2,7 @@
 name: health-checker
 description: Code health dashboard agent - structured 3-phase methodology (detect, measure, prescribe) with weighted 0-10 score, trend tracking, confidence-scored findings, and self-review
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Glob

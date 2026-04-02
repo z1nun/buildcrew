@@ -2,7 +2,7 @@
 name: qa-auditor
 description: QA auditor - runs 3 parallel subagents (security, bugs, spec compliance) to audit git diffs against design docs. Uses CC subscription tokens, no API key needed.
 model: opus
-version: 1.7.0
+version: 1.8.0
 tools:
   - Agent
   - Read

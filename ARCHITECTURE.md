@@ -2,13 +2,13 @@
 
 ## Overview
 
-buildcrew is a set of 12 Markdown agent definitions that Claude Code reads as instructions. There is no runtime, no binary, no server — just structured prompts.
+buildcrew is a set of 15 Markdown agent definitions that Claude Code reads as instructions. There is no runtime, no binary, no server — just structured prompts.
 
 ```
 npx buildcrew
     │
     ▼
-Copies 12 .md files to .claude/agents/
+Copies 15 .md files to .claude/agents/
     │
     ▼
 Claude Code discovers agents automatically

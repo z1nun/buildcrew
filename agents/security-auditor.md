@@ -2,7 +2,7 @@
 name: security-auditor
 description: Security auditor agent - performs OWASP Top 10 and STRIDE threat model security audits, scans for secrets, dependency vulnerabilities, and injection vectors
 model: sonnet
-version: 1.7.0
+version: 1.8.0
 tools:
   - Read
   - Glob
