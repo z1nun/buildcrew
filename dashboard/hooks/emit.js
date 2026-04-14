@@ -59,15 +59,16 @@ function toEvent(kind, data) {
   switch (kind) {
     case "pre-agent": {
       const subagent = data?.tool_input?.subagent_type ?? "agent";
-      const prompt = truncate(data?.tool_input?.prompt ?? data?.tool_input?.description ?? "", 80);
+      // Capture fuller prompt so the Dialogue view shows real conversation
+      const prompt = truncate(data?.tool_input?.prompt ?? data?.tool_input?.description ?? "", 400);
       return { type: "agent.dispatched", agent: subagent, from: "buildcrew", prompt };
     }
     case "post-agent": {
       const subagent = data?.tool_input?.subagent_type ?? "agent";
       const resp = data?.tool_response;
       let summary = "";
-      if (typeof resp === "string") summary = resp.slice(0, 120);
-      else if (resp?.content?.[0]?.text) summary = String(resp.content[0].text).slice(0, 120);
+      if (typeof resp === "string") summary = resp.slice(0, 500);
+      else if (resp?.content?.[0]?.text) summary = String(resp.content[0].text).slice(0, 500);
       return { type: "agent.completed", agent: subagent, output_summary: summary };
     }
     case "file-written": {

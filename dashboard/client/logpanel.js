@@ -13,6 +13,7 @@
 import { session } from "./state/session.js";
 import { openIssueModal, openAgentPanel, toast } from "./modals.js";
 import { isPaused } from "./controls.js";
+import { dispatchLine, completeLine, issueLine, stageLine, agentEmoji } from "./voices.js";
 
 const MAX_ROWS = 500;
 
@@ -39,7 +40,10 @@ export function mountLogPanel() {
 
   container.innerHTML = `
     <div class="lp-header">
-      <div class="lp-title">📋 EVENT LOG</div>
+      <div class="lp-tabs">
+        <button class="lp-tab active" data-mode="events">📋 Events</button>
+        <button class="lp-tab" data-mode="dialogue">💬 Dialogue</button>
+      </div>
       <div class="lp-controls">
         <select id="lp-agent-filter"><option value="">all agents</option></select>
         <select id="lp-type-filter">
@@ -66,9 +70,12 @@ export function mountLogPanel() {
     agents: new Set(),
     agentFilter: "",
     typeFilter: "",
+    mode: "events",   // "events" | "dialogue"
   };
 
   function render() {
+    if (state.mode === "dialogue") return renderDialogue();
+
     const filtered = state.events.filter(passesFilter);
     metaEl.textContent =
       `${filtered.length} / ${state.events.length} events` +
@@ -81,6 +88,112 @@ export function mountLogPanel() {
       frag.appendChild(renderRow(ev));
     }
     rowsEl.appendChild(frag);
+  }
+
+  function renderDialogue() {
+    // Only show conversation-worthy events, in chronological order
+    const convo = state.events
+      .filter((ev) =>
+        ev.type === "agent.dispatched" ||
+        ev.type === "agent.completed" ||
+        ev.type === "issue.found" ||
+        ev.type === "pipeline.stage" ||
+        ev.type === "session.start" ||
+        ev.type === "session.end")
+      .filter((ev) => !state.agentFilter || ev.agent === state.agentFilter || (ev.type === "agent.dispatched" && ev.from === state.agentFilter))
+      .reverse(); // oldest first, like a chat log
+
+    metaEl.textContent = `💬 ${convo.length} lines of team dialogue` +
+      (state.agentFilter ? ` · ${state.agentFilter} only` : "");
+
+    rowsEl.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (const ev of convo) {
+      const bubble = renderDialogueBubble(ev);
+      if (bubble) frag.appendChild(bubble);
+    }
+    rowsEl.appendChild(frag);
+    // Auto-scroll to latest (bottom, since chronological)
+    rowsEl.scrollTop = rowsEl.scrollHeight;
+  }
+
+  function renderDialogueBubble(ev) {
+    const node = document.createElement("div");
+    node.className = "lp-bubble";
+    const ts = ev.at ? formatTime(ev.at) : "";
+
+    if (ev.type === "session.start") {
+      node.className = "lp-bubble lp-bubble-system";
+      node.innerHTML = `<div class="lp-bubble-ts">${esc(ts)}</div><div class="lp-bubble-body">🎬 세션 시작 — <code>${esc(ev.session_id ?? "")}</code></div>`;
+      return node;
+    }
+    if (ev.type === "session.end") {
+      node.className = "lp-bubble lp-bubble-system";
+      node.innerHTML = `<div class="lp-bubble-ts">${esc(ts)}</div><div class="lp-bubble-body">🎬 세션 종료 · ${esc(ev.outcome ?? "done")}</div>`;
+      return node;
+    }
+    if (ev.type === "pipeline.stage") {
+      node.className = "lp-bubble lp-bubble-stage";
+      const line = stageLine(ev.stage);
+      node.innerHTML = `
+        <div class="lp-bubble-ts">${esc(ts)}</div>
+        <div class="lp-bubble-stage-head">▶ ${esc(String(ev.stage ?? "").toUpperCase())}</div>
+        <div class="lp-bubble-body"><span class="lp-bubble-who">🎩 팀장</span> "${esc(line)}"</div>
+      `;
+      return node;
+    }
+    if (ev.type === "agent.dispatched") {
+      const emoji = agentEmoji("buildcrew");
+      const line = dispatchLine(ev.agent, ev.prompt);
+      node.className = "lp-bubble lp-bubble-from-lead";
+      node.innerHTML = `
+        <div class="lp-bubble-ts">${esc(ts)}</div>
+        <div class="lp-bubble-body">
+          <span class="lp-bubble-who">${emoji} 팀장 → ${esc(agentEmoji(ev.agent))} ${esc(ev.agent)}</span>
+          "${esc(line)}"
+        </div>
+      `;
+      // Clicking the bubble opens agent detail panel
+      node.addEventListener("click", () => {
+        window.dispatchEvent(new CustomEvent("dashboard:agent-select", { detail: { agent: ev.agent } }));
+      });
+      return node;
+    }
+    if (ev.type === "agent.completed") {
+      const emoji = agentEmoji(ev.agent);
+      const line = completeLine(ev.agent, ev.output_summary);
+      node.className = "lp-bubble lp-bubble-from-agent";
+      node.innerHTML = `
+        <div class="lp-bubble-ts">${esc(ts)}</div>
+        <div class="lp-bubble-body">
+          <span class="lp-bubble-who">${emoji} ${esc(ev.agent)} → 🎩 팀장</span>
+          "${esc(line)}"
+          ${ev.duration_s != null ? `<span class="lp-bubble-dur">(${ev.duration_s}s)</span>` : ""}
+        </div>
+      `;
+      node.addEventListener("click", () => {
+        window.dispatchEvent(new CustomEvent("dashboard:agent-select", { detail: { agent: ev.agent } }));
+      });
+      return node;
+    }
+    if (ev.type === "issue.found") {
+      const emoji = agentEmoji(ev.agent);
+      const line = issueLine(ev.agent, ev.severity, ev.title ?? "");
+      node.className = `lp-bubble lp-bubble-issue lp-bubble-issue-${ev.severity ?? "med"}`;
+      node.innerHTML = `
+        <div class="lp-bubble-ts">${esc(ts)}</div>
+        <div class="lp-bubble-body">
+          <span class="lp-bubble-who">${emoji} ${esc(ev.agent)}</span>
+          "${esc(line)}"
+        </div>
+      `;
+      node.addEventListener("click", () => {
+        const ordered = [...state.events].reverse();
+        openIssueModal(ev, ordered);
+      });
+      return node;
+    }
+    return null;
   }
 
   function passesFilter(ev) {
@@ -206,6 +319,17 @@ export function mountLogPanel() {
     typeFilterEl.value = "";
     render();
   });
+
+  // Tab switcher
+  for (const tabBtn of container.querySelectorAll(".lp-tab")) {
+    tabBtn.addEventListener("click", () => {
+      state.mode = tabBtn.dataset.mode;
+      for (const b of container.querySelectorAll(".lp-tab")) {
+        b.classList.toggle("active", b === tabBtn);
+      }
+      render();
+    });
+  }
 
   // Listen for agent-select from canvas (click a character → filter log + open side panel)
   window.addEventListener("dashboard:agent-select", (e) => {

@@ -47,11 +47,95 @@
         border-bottom: 1px solid var(--wood-dark);
         background: var(--wood-dark);
       }
+      .lp-tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+      .lp-tab {
+        background: var(--bg);
+        color: var(--cream-muted);
+        border: 1px solid var(--wood);
+        padding: 5px 12px;
+        font: inherit;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        letter-spacing: 1px;
+      }
+      .lp-tab.active {
+        background: var(--wood);
+        color: var(--cream);
+        border-color: var(--wood-light);
+      }
+      .lp-tab:hover:not(.active) { border-color: var(--wood-light); }
       .lp-title {
         font-weight: bold;
         font-size: 13px;
         letter-spacing: 2px;
         color: var(--cream);
+      }
+      /* Dialogue bubbles */
+      .lp-bubble {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--wood-dark);
+        line-height: 1.5;
+        cursor: pointer;
+      }
+      .lp-bubble:hover { background: rgba(139,111,71,0.1); }
+      .lp-bubble-ts {
+        font-size: 10px;
+        color: var(--cream-muted);
+        margin-bottom: 3px;
+      }
+      .lp-bubble-body {
+        font-size: 13px;
+        color: var(--cream);
+        word-break: break-word;
+      }
+      .lp-bubble-who {
+        display: inline-block;
+        font-weight: bold;
+        color: var(--wood-light);
+        margin-right: 6px;
+        font-size: 12px;
+      }
+      .lp-bubble-dur {
+        color: var(--cream-muted);
+        font-size: 11px;
+        margin-left: 4px;
+      }
+      .lp-bubble-from-lead {
+        background: rgba(139,111,71,0.06);
+        border-left: 3px solid var(--wood-light);
+      }
+      .lp-bubble-from-agent {
+        background: rgba(168,217,148,0.05);
+        border-left: 3px solid var(--ok);
+      }
+      .lp-bubble-issue {
+        border-left: 3px solid var(--warn);
+      }
+      .lp-bubble-issue-critical {
+        background: rgba(255,133,102,0.08);
+        border-left-color: var(--crit);
+      }
+      .lp-bubble-stage {
+        background: rgba(255,217,102,0.06);
+        border-left: 3px solid #ffd966;
+        padding: 14px;
+      }
+      .lp-bubble-stage-head {
+        font-weight: bold;
+        font-size: 14px;
+        letter-spacing: 2px;
+        color: #ffd966;
+        margin-bottom: 4px;
+      }
+      .lp-bubble-system {
+        background: rgba(184,168,140,0.08);
+        font-style: italic;
+        color: var(--cream-muted);
       }
       .lp-controls {
         display: flex;
