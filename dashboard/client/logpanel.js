@@ -69,9 +69,14 @@ export function mountLogPanel() {
       <div class="lp-input-row">
         <span class="lp-input-prompt">❯</span>
         <input id="cmd-input" type="text" placeholder="@buildcrew ..." autocomplete="off" spellcheck="false" />
+        <select id="cmd-mode" title="permission mode">
+          <option value="default">🛡 Strict</option>
+          <option value="acceptEdits" selected>⚡ Normal</option>
+          <option value="bypassPermissions">⚠ Trust</option>
+        </select>
         <button id="cmd-send">RUN</button>
       </div>
-      <div class="lp-input-status" id="cmd-status">idle</div>
+      <div class="lp-input-status" id="cmd-status">idle · <span id="cmd-mode-label">Normal</span> mode</div>
     </div>
   `;
   document.body.dataset.tab = "events";

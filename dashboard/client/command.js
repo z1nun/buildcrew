@@ -13,17 +13,57 @@
 
 import { toast } from "./modals.js";
 
+const MODE_LABELS = {
+  default: "Strict",
+  acceptEdits: "Normal",
+  bypassPermissions: "Trust",
+};
+
 export function mountCommand({ logPanel }) {
   const input = document.getElementById("cmd-input");
   const sendBtn = document.getElementById("cmd-send");
   const status = document.getElementById("cmd-status");
+  const modeSel = document.getElementById("cmd-mode");
+  const modeLabel = document.getElementById("cmd-mode-label");
 
   const state = {
     running: false,
     history: [],
     historyIdx: -1,
     currentId: null,
+    mode: loadMode(),
+    trustAcknowledged: localStorage.getItem("dashboard:trust-ack") === "1",
   };
+
+  // Apply persisted mode
+  if (modeSel) {
+    modeSel.value = state.mode;
+    modeSel.dataset.mode = state.mode;
+    if (modeLabel) modeLabel.textContent = MODE_LABELS[state.mode] ?? state.mode;
+    modeSel.addEventListener("change", (e) => {
+      const newMode = e.target.value;
+      if (newMode === "bypassPermissions" && !state.trustAcknowledged) {
+        const ok = confirm(
+          "⚠ Trust mode — bypasses ALL permission checks.\n\n" +
+          "claude -p runs with --permission-mode bypassPermissions, so any tool\n" +
+          "call (including Bash) executes without your approval. Use only if you\n" +
+          "trust the agent prompts you're about to send.\n\n" +
+          "Continue?"
+        );
+        if (!ok) {
+          modeSel.value = state.mode;
+          return;
+        }
+        state.trustAcknowledged = true;
+        localStorage.setItem("dashboard:trust-ack", "1");
+      }
+      state.mode = newMode;
+      modeSel.dataset.mode = newMode;
+      if (modeLabel) modeLabel.textContent = MODE_LABELS[newMode] ?? newMode;
+      localStorage.setItem("dashboard:permission-mode", newMode);
+      toast(`permission mode: ${MODE_LABELS[newMode]}`);
+    });
+  }
 
   setRunning(false);
 
@@ -120,7 +160,7 @@ export function mountCommand({ logPanel }) {
       const r = await fetch("/command", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, permission_mode: state.mode }),
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
@@ -139,11 +179,23 @@ export function mountCommand({ logPanel }) {
     input.disabled = isRunning;
     sendBtn.disabled = isRunning;
     sendBtn.textContent = isRunning ? "…" : "RUN";
-    status.textContent = isRunning ? "running" : "idle";
+    if (modeSel) modeSel.disabled = isRunning;
+    const modeText = MODE_LABELS[state.mode] ?? state.mode;
+    status.innerHTML = isRunning
+      ? `running · <span>${modeText}</span> mode`
+      : `idle · <span id="cmd-mode-label">${modeText}</span> mode`;
     status.classList.toggle("running", isRunning);
     if (!isRunning) input.focus();
   }
 
   // Initial focus
   input.focus();
+}
+
+function loadMode() {
+  const stored = localStorage.getItem("dashboard:permission-mode");
+  if (stored && ["default", "acceptEdits", "bypassPermissions"].includes(stored)) {
+    return stored;
+  }
+  return "acceptEdits";
 }

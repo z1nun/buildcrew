@@ -300,6 +300,25 @@
       #cmd-input:focus { border-color: var(--wood-light); }
       #cmd-input::placeholder { color: var(--cream-muted); font-style: italic; }
       #cmd-input:disabled { opacity: 0.5; }
+      #cmd-mode {
+        background: var(--bg);
+        color: var(--cream-muted);
+        border: 1px solid var(--wood-dark);
+        font: inherit;
+        font-size: 11px;
+        padding: 6px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #cmd-mode:hover { border-color: var(--wood-light); color: var(--cream); }
+      #cmd-mode[data-mode="bypassPermissions"] {
+        color: var(--crit);
+        border-color: var(--crit);
+      }
+      #cmd-mode[data-mode="default"] {
+        color: var(--wood-light);
+        border-color: var(--wood);
+      }
       #cmd-send {
         background: var(--wood);
         border: 1px solid var(--wood-light);

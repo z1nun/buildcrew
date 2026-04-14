@@ -25,6 +25,62 @@ export function resolveSettingsPath({ scope, cwd }) {
 }
 
 /**
+ * Permissions file lives in settings.local.json (user-scoped, gitignored).
+ */
+export function resolvePermissionsPath({ scope, cwd }) {
+  if (scope === "global") return path.join(os.homedir(), ".claude", "settings.local.json");
+  return path.join(cwd, ".claude", "settings.local.json");
+}
+
+/**
+ * Buildcrew-recommended permission allow/deny lists.
+ * Covers common subagent operations. Dangerous Bash patterns denied.
+ */
+export function buildcrewPermissions() {
+  return {
+    allow: [
+      "Agent",
+      "Task",
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ls *)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(echo *)",
+    ],
+    deny: [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(curl * -X POST*)",
+    ],
+  };
+}
+
+/**
  * Construct the hooks section buildcrew owns.
  * Each entry is tagged with `buildcrew-dashboard` for idempotent removal.
  * @param {string} emitScript Absolute path to dashboard/hooks/emit.js
@@ -49,7 +105,7 @@ export function buildcrewHooks(emitScript) {
 }
 
 /**
- * @param {{ scope?: "project"|"global", cwd?: string, emitScript: string, dryRun?: boolean }} opts
+ * @param {{ scope?: "project"|"global", cwd?: string, emitScript: string, dryRun?: boolean, withPermissions?: boolean }} opts
  */
 export async function install(opts) {
   const scope = opts.scope ?? "project";
@@ -63,13 +119,68 @@ export async function install(opts) {
   const next = mergeHooks(current, buildcrewHooks(emitScript));
   const preview = formatDiff(current, next, settingsPath);
 
+  // Optional: write recommended permissions to settings.local.json
+  let permissionsResult = null;
+  if (opts.withPermissions) {
+    permissionsResult = await installPermissions({ scope, cwd, dryRun: opts.dryRun });
+  }
+
   if (opts.dryRun) {
-    return { action: "dry-run", settingsPath, preview, existed };
+    return { action: "dry-run", settingsPath, preview, existed, permissions: permissionsResult };
   }
 
   const backupPath = existed ? await backup(settingsPath) : null;
   await atomicWrite(settingsPath, JSON.stringify(next, null, 2) + "\n");
-  return { action: "installed", settingsPath, backupPath, preview, existed };
+  return { action: "installed", settingsPath, backupPath, preview, existed, permissions: permissionsResult };
+}
+
+/**
+ * Merge recommended allow/deny into .claude/settings.local.json.
+ * Idempotent: does not duplicate existing entries.
+ */
+export async function installPermissions({ scope = "project", cwd = process.cwd(), dryRun = false }) {
+  const permPath = resolvePermissionsPath({ scope, cwd });
+  const { current, existed } = await readSettings(permPath);
+  const rec = buildcrewPermissions();
+
+  const nextPerms = current.permissions && typeof current.permissions === "object"
+    ? { ...current.permissions }
+    : {};
+  const mergedAllow = mergeUnique(nextPerms.allow, rec.allow);
+  const mergedDeny = mergeUnique(nextPerms.deny, rec.deny);
+  nextPerms.allow = mergedAllow;
+  nextPerms.deny = mergedDeny;
+
+  const next = { ...current, permissions: nextPerms };
+  const preview = formatPermDiff(current?.permissions ?? {}, nextPerms, permPath);
+
+  if (dryRun) return { action: "dry-run", permPath, preview, existed };
+
+  const backupPath = existed ? await backup(permPath) : null;
+  await atomicWrite(permPath, JSON.stringify(next, null, 2) + "\n");
+  return { action: "installed", permPath, backupPath, preview, existed };
+}
+
+function mergeUnique(existing, additions) {
+  const base = Array.isArray(existing) ? existing.slice() : [];
+  const seen = new Set(base);
+  for (const a of additions) {
+    if (!seen.has(a)) { base.push(a); seen.add(a); }
+  }
+  return base;
+}
+
+function formatPermDiff(before, after, filePath) {
+  const a = JSON.stringify(before ?? {}, null, 2);
+  const b = JSON.stringify(after ?? {}, null, 2);
+  if (a === b) return "  (no change to permissions)";
+  return [
+    `  file: ${filePath}`,
+    "  ---- BEFORE permissions ----",
+    indent(a),
+    "  ---- AFTER permissions ----",
+    indent(b),
+  ].join("\n");
 }
 
 /**

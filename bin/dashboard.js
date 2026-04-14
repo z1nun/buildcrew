@@ -47,8 +47,9 @@ if (flag("--install")) {
 // --------------------------------
 
 async function runInstall() {
+  const withPermissions = flag("--with-permissions");
   try {
-    const result = await install({ scope, cwd, emitScript: EMIT_SCRIPT, dryRun });
+    const result = await install({ scope, cwd, emitScript: EMIT_SCRIPT, dryRun, withPermissions });
     console.log("");
     console.log(`  buildcrew dashboard — ${dryRun ? "install (dry run)" : "install"}`);
     console.log("  ────────────────────────────────────────");
@@ -58,6 +59,19 @@ async function runInstall() {
     console.log("");
     console.log(result.preview);
     console.log("");
+    if (result.permissions) {
+      console.log(`  permissions: ${result.permissions.permPath}`);
+      if (result.permissions.backupPath) {
+        console.log(`  permissions backup: ${result.permissions.backupPath}`);
+      }
+      console.log(result.permissions.preview);
+      console.log("");
+    } else if (!withPermissions) {
+      console.log("  Tip: add --with-permissions to auto-allow buildcrew tool calls");
+      console.log("       (Agent, Write, Edit, common Bash commands) in");
+      console.log("       .claude/settings.local.json — stops permission prompt storms.");
+      console.log("");
+    }
     if (result.action === "installed") {
       console.log("  ✓ installed. Start the dashboard with:");
       console.log("      npx buildcrew-dashboard");

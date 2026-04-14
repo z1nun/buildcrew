@@ -232,6 +232,9 @@ async function serveStatic(res, pathname) {
  *
  * Safety: one active command at a time. User-triggered only.
  */
+const VALID_PERMISSION_MODES = new Set(["default", "acceptEdits", "bypassPermissions", "plan"]);
+const DEFAULT_PERMISSION_MODE = "acceptEdits";
+
 async function handleCommandStart(req, res, cwd) {
   if (activeCommand) {
     return json(res, 409, {
@@ -246,15 +249,23 @@ async function handleCommandStart(req, res, cwd) {
   const prompt = String(parsed?.prompt ?? "").trim();
   if (!prompt) return json(res, 400, { error: "prompt required" });
 
+  const permissionMode = typeof parsed?.permission_mode === "string"
+    && VALID_PERMISSION_MODES.has(parsed.permission_mode)
+    ? parsed.permission_mode
+    : DEFAULT_PERMISSION_MODE;
+
   const id = `cmd-${Date.now()}`;
   let child;
   try {
     // --output-format stream-json gives one JSON per line (tool calls, text deltas, etc)
-    // --verbose keeps system init events. --dangerously-skip-permissions not used.
+    // --verbose keeps system init events.
+    // --permission-mode: acceptEdits (default) lets Write/Edit through but still
+    //   halts on Bash without prompt-capable tty. bypassPermissions = trust mode.
     child = spawn("claude", [
       "-p", prompt,
       "--output-format", "stream-json",
       "--verbose",
+      "--permission-mode", permissionMode,
     ], {
       cwd,
       env: process.env,
@@ -264,10 +275,10 @@ async function handleCommandStart(req, res, cwd) {
     return json(res, 500, { error: `spawn failed: ${err.message}` });
   }
 
-  activeCommand = { id, child, startedAt: Date.now(), prompt };
+  activeCommand = { id, child, startedAt: Date.now(), prompt, permissionMode };
 
   // Notify clients that a command just started
-  broadcastCmd({ type: "command.started", id, prompt, at: new Date().toISOString() });
+  broadcastCmd({ type: "command.started", id, prompt, permission_mode: permissionMode, at: new Date().toISOString() });
 
   // Pipe stdout: parse line-by-line, forward JSON objects
   let outBuf = "";
@@ -347,6 +358,7 @@ async function handleCommandStream(req, res) {
       type: "command.active",
       id: activeCommand.id,
       prompt: activeCommand.prompt,
+      permission_mode: activeCommand.permissionMode,
       startedAt: activeCommand.startedAt,
     })}\n\n`);
   }
