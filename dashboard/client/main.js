@@ -7,6 +7,9 @@
 import { TownScene } from "./scenes/TownScene.js";
 import { BillboardScene } from "./scenes/BillboardScene.js";
 import { attachDispatcher } from "./events/dispatcher.js";
+import { setupSfx } from "./sfx.js";
+
+setupSfx();
 
 const BILLBOARD_H = 72;
 
