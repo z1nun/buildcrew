@@ -25,22 +25,52 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         height: 100%; overflow: hidden;
       }
-      /* Main split: Phaser canvas on left, log panel on right */
+      /* Main split: Phaser canvas on left, log panel on right.
+       * Log panel collapses via media queries and can be toggled on any screen. */
+      :root {
+        --log-width: 460px;
+      }
       #stage {
         position: fixed;
-        top: 0; left: 0; bottom: 32px; right: 460px;
+        top: 0; left: 0; bottom: 32px; right: var(--log-width);
         overflow: hidden;
+        transition: right 0.2s ease-out;
       }
+      body.log-hidden #stage { right: 0; }
       #app { position: absolute; inset: 0; }
       #logpanel {
         position: fixed;
         top: 0; right: 0; bottom: 32px;
-        width: 460px;
+        width: var(--log-width);
         background: var(--bg-panel);
         border-left: 2px solid var(--wood);
         display: flex;
         flex-direction: column;
         font-size: 13px;
+        transition: transform 0.2s ease-out;
+      }
+      body.log-hidden #logpanel { transform: translateX(100%); }
+
+      /* Medium screens — narrower sidebar */
+      @media (max-width: 1200px) {
+        :root { --log-width: 380px; }
+      }
+      @media (max-width: 900px) {
+        :root { --log-width: 320px; }
+        .lp-controls select, .lp-controls button { font-size: 11px; padding: 3px 6px; }
+        .lp-row-body { font-size: 12px; }
+        .lp-bubble-body { font-size: 12px; }
+      }
+      /* Small screens — sidebar becomes overlay, town gets full width */
+      @media (max-width: 700px) {
+        :root { --log-width: 100vw; }
+        #stage { right: 0 !important; }
+        #logpanel {
+          transform: translateX(100%);
+          max-width: 420px;
+          box-shadow: -4px 0 12px rgba(0,0,0,0.4);
+        }
+        body:not(.log-hidden) #logpanel { transform: translateX(0); }
       }
       .lp-header {
         padding: 12px 14px;
@@ -264,7 +294,8 @@
       <span style="flex: 1"></span>
       <button id="btn-pause" class="sb-btn" title="pause event stream">⏸ pause</button>
       <button id="btn-export" class="sb-btn" title="download session as JSONL">⇩ export</button>
-      <span>🏠 buildcrew town</span>
+      <button id="btn-toggle-log" class="sb-btn" title="show/hide log panel">📋 log</button>
+      <span class="sb-label">🏠 buildcrew town</span>
     </div>
     <style>
       #statusbar .sb-btn {
@@ -279,6 +310,11 @@
       }
       #statusbar .sb-btn:hover { border-color: var(--wood-light); color: var(--cream); }
       #statusbar .sb-btn.active { background: var(--wood); color: var(--cream); }
+      @media (max-width: 700px) {
+        #statusbar { font-size: 10px; gap: 6px; padding: 0 8px; }
+        #statusbar .sb-label { display: none; }
+        #statusbar .sb-btn { padding: 2px 6px; font-size: 10px; }
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <script type="module" src="./main.js"></script>

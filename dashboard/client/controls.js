@@ -16,6 +16,7 @@ const state = {
 export function mountControls({ logPanel }) {
   const pauseBtn = document.getElementById("btn-pause");
   const exportBtn = document.getElementById("btn-export");
+  const logToggle = document.getElementById("btn-toggle-log");
 
   pauseBtn.addEventListener("click", () => {
     state.paused = !state.paused;
@@ -32,6 +33,25 @@ export function mountControls({ logPanel }) {
   exportBtn.addEventListener("click", () => {
     exportSession();
   });
+
+  if (logToggle) {
+    // On very small screens default to hidden; elsewhere default to visible
+    if (window.matchMedia("(max-width: 700px)").matches) {
+      document.body.classList.add("log-hidden");
+    }
+    const refresh = () => {
+      const hidden = document.body.classList.contains("log-hidden");
+      logToggle.classList.toggle("active", !hidden);
+      logToggle.textContent = hidden ? "📋 log" : "✕ close";
+      // Phaser needs a manual resize when the stage size changes
+      window.dispatchEvent(new Event("resize"));
+    };
+    refresh();
+    logToggle.addEventListener("click", () => {
+      document.body.classList.toggle("log-hidden");
+      refresh();
+    });
+  }
 }
 
 export function isPaused() {

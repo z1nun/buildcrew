@@ -205,17 +205,17 @@ export class TownScene extends Phaser.Scene {
     }).setOrigin(0.5, 0);
     container.add(name);
 
-    // Bubble
-    const bubbleBg = this.add.rectangle(0, -32, 160, 22, PALETTE.cream, 0.98);
+    // Bubble — dimensions recomputed per showBubble() call
+    const bubbleBg = this.add.rectangle(0, -34, 160, 22, PALETTE.cream, 0.98).setOrigin(0.5);
     bubbleBg.setStrokeStyle(2, PALETTE.woodDark);
     bubbleBg.setVisible(false);
     container.add(bubbleBg);
-    const bubbleText = this.add.text(0, -32, "", {
+    const bubbleText = this.add.text(0, -34, "", {
       fontFamily: "ui-monospace, monospace",
-      fontSize: "9px",
+      fontSize: "10px",
       color: "#2a2420",
       align: "center",
-      wordWrap: { width: 150 },
+      wordWrap: { width: 240, useAdvancedWrap: true },
     }).setOrigin(0.5);
     bubbleText.setVisible(false);
     container.add(bubbleText);
@@ -298,8 +298,25 @@ export class TownScene extends Phaser.Scene {
   }
 
   showBubble(a, text, autoHideMs) {
-    a.bubbleText.setText(text);
-    a.bubbleBg.width = Math.min(220, a.bubbleText.width + 14);
+    const str = String(text ?? "");
+    // Scale bubble width with screen size so small screens don't get gigantic bubbles
+    const maxW = Math.min(280, Math.max(140, Math.floor(this.scale.width * 0.28)));
+    a.bubbleText.setStyle({ wordWrap: { width: maxW - 16, useAdvancedWrap: true } });
+    a.bubbleText.setText(str);
+
+    // After setText, Phaser re-measured height/width. Size bubble to fit snugly.
+    const padX = 14;
+    const padY = 10;
+    const w = Math.min(maxW, Math.ceil(a.bubbleText.width) + padX);
+    const h = Math.ceil(a.bubbleText.height) + padY;
+    a.bubbleBg.width = w;
+    a.bubbleBg.height = h;
+
+    // Stack bubble above character head (character sprite ~32px tall, centered on 0)
+    const offsetY = -Math.ceil(h / 2) - 22;
+    a.bubbleBg.setPosition(0, offsetY);
+    a.bubbleText.setPosition(0, offsetY);
+
     a.bubbleBg.setVisible(true);
     a.bubbleText.setVisible(true);
     if (autoHideMs) this.time.delayedCall(autoHideMs, () => this.hideBubble(a));
