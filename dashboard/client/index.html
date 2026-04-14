@@ -2,47 +2,183 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>buildcrew dashboard</title>
+    <title>buildcrew town</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0b0d12;
-        --panel: #12151c;
-        --border: #232836;
-        --text: #e8ecf4;
-        --muted: #8a93a7;
+        --bg: #2a2420;
+        --bg-panel: #332a24;
+        --wood: #8b6f47;
+        --wood-dark: #5c4a30;
+        --wood-light: #c9a876;
+        --cream: #f5ebd7;
+        --cream-muted: #b8a88c;
+        --warn: #f2b24a;
+        --crit: #ff8566;
+        --ok: #a8d994;
+        --info: #5aa9ff;
       }
       html, body {
         margin: 0; padding: 0;
-        background: var(--bg); color: var(--text);
+        background: var(--bg); color: var(--cream);
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         height: 100%; overflow: hidden;
       }
-      #app { position: fixed; inset: 0; }
+      /* Main split: Phaser canvas on left, log panel on right */
+      #stage {
+        position: fixed;
+        top: 0; left: 0; bottom: 32px; right: 460px;
+        overflow: hidden;
+      }
+      #app { position: absolute; inset: 0; }
+      #logpanel {
+        position: fixed;
+        top: 0; right: 0; bottom: 32px;
+        width: 460px;
+        background: var(--bg-panel);
+        border-left: 2px solid var(--wood);
+        display: flex;
+        flex-direction: column;
+        font-size: 13px;
+      }
+      .lp-header {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--wood-dark);
+        background: var(--wood-dark);
+      }
+      .lp-title {
+        font-weight: bold;
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: var(--cream);
+      }
+      .lp-controls {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .lp-controls select, .lp-controls button {
+        background: var(--bg);
+        color: var(--cream);
+        border: 1px solid var(--wood);
+        padding: 4px 8px;
+        font: inherit;
+        font-size: 12px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      .lp-controls select:hover, .lp-controls button:hover {
+        border-color: var(--wood-light);
+      }
+      .lp-meta {
+        padding: 8px 14px;
+        font-size: 12px;
+        color: var(--cream-muted);
+        border-bottom: 1px solid var(--wood-dark);
+      }
+      .lp-rows {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+      .lp-rows::-webkit-scrollbar {
+        width: 8px;
+      }
+      .lp-rows::-webkit-scrollbar-thumb {
+        background: var(--wood-dark);
+        border-radius: 4px;
+      }
+      .lp-row {
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--wood-dark);
+        cursor: pointer;
+        line-height: 1.45;
+      }
+      .lp-row:hover {
+        background: rgba(139,111,71,0.15);
+      }
+      .lp-row-top {
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+        font-size: 12px;
+      }
+      .lp-ts { color: var(--cream-muted); font-family: ui-monospace, monospace; }
+      .lp-type { font-weight: bold; font-size: 12px; letter-spacing: 0.5px; }
+      .lp-agent {
+        color: var(--wood-light);
+        background: rgba(139,111,71,0.25);
+        padding: 1px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+      .lp-row-body {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--cream);
+        word-break: break-word;
+      }
+      .lp-row-body code {
+        background: rgba(0,0,0,0.3);
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        color: var(--wood-light);
+      }
+      .lp-muted { color: var(--cream-muted); font-style: italic; }
+      .lp-stage { color: var(--warn); font-weight: bold; }
+      .lp-sev { padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: bold; }
+      .lp-sev-critical { background: #4a1c18; color: var(--crit); }
+      .lp-sev-high { background: #3c2818; color: var(--warn); }
+      .lp-sev-med { background: #3c2818; color: var(--warn); }
+      .lp-row-detail {
+        margin-top: 8px;
+        padding: 8px 10px;
+        background: rgba(0,0,0,0.4);
+        border-left: 2px solid var(--wood);
+        font-size: 12px;
+        color: var(--cream-muted);
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-x: auto;
+      }
+      /* Status bar */
       #statusbar {
         position: fixed; bottom: 0; left: 0; right: 0;
-        padding: 6px 12px;
-        background: rgba(11,13,18,0.82);
-        backdrop-filter: blur(4px);
-        border-top: 1px solid var(--border);
-        font-size: 11px; color: var(--muted);
-        display: flex; justify-content: space-between; align-items: center;
+        height: 32px; box-sizing: border-box;
+        padding: 0 12px;
+        background: rgba(42,36,32,0.95);
+        border-top: 2px solid var(--wood);
+        font-size: 11px; color: var(--cream-muted);
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px;
         z-index: 10;
       }
-      #statusbar .live::before { content: "● "; color: #7ee0a2; }
-      #statusbar .dead::before { content: "○ "; color: #ff5a63; }
+      #statusbar .live::before { content: "🟢 "; }
+      #statusbar .dead::before { content: "⚫ "; }
+      #sfx-toggle {
+        background: none;
+        border: 1px solid var(--wood);
+        color: var(--cream-muted);
+        font: inherit;
+        padding: 2px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="stage">
+      <div id="app"></div>
+    </div>
+    <div id="logpanel"></div>
     <div id="statusbar">
       <span id="conn" class="dead">connecting…</span>
       <span id="count">0 events</span>
-      <span>buildcrew dashboard · Part A</span>
+      <span>🏠 buildcrew town · Part A</span>
     </div>
-
-    <!-- Phaser 3 from jsdelivr CDN (pinned version for reproducibility) -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
