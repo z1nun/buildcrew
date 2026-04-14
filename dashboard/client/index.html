@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>buildcrew dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d12;
+        --panel: #12151c;
+        --border: #232836;
+        --text: #e8ecf4;
+        --muted: #8a93a7;
+        --accent: #7ee0a2;
+        --warn: #f2b24a;
+        --crit: #ff5a63;
+      }
+      html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; height: 100%; }
+      header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+      header h1 { margin: 0; font-size: 15px; letter-spacing: 0.4px; }
+      header .status { font-size: 12px; color: var(--muted); }
+      header .status.live::before { content: "● "; color: var(--accent); }
+      main { padding: 16px 24px; }
+      .note { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+      .event { border: 1px solid var(--border); background: var(--panel); padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
+      .event .row1 { display: flex; justify-content: space-between; gap: 12px; }
+      .event .type { color: var(--accent); }
+      .event .type.issue { color: var(--warn); }
+      .event .type.critical { color: var(--crit); }
+      .event .ts { color: var(--muted); font-size: 11px; white-space: nowrap; }
+      .event pre { margin: 6px 0 0; color: var(--muted); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+      #log { max-height: calc(100vh - 120px); overflow-y: auto; display: flex; flex-direction: column-reverse; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>buildcrew dashboard — part A (watch-only)</h1>
+      <div class="status" id="status">connecting…</div>
+    </header>
+    <main>
+      <div class="note">Phaser scene will render here in next milestone. Right now: raw event feed from SSE.</div>
+      <div id="log"></div>
+    </main>
+    <script>
+      const log = document.getElementById("log");
+      const status = document.getElementById("status");
+      const es = new EventSource("/events");
+
+      es.onopen = () => { status.textContent = "live"; status.classList.add("live"); };
+      es.onerror = () => { status.textContent = "disconnected — retrying…"; status.classList.remove("live"); };
+
+      es.onmessage = (msg) => {
+        let ev;
+        try { ev = JSON.parse(msg.data); }
+        catch { return console.warn("bad event", msg.data); }
+        renderEvent(ev);
+      };
+
+      function renderEvent(ev) {
+        const node = document.createElement("div");
+        node.className = "event";
+        const severity = ev.severity === "critical" ? "critical" : (ev.type === "issue.found" ? "issue" : "");
+        const typeHtml = `<span class="type ${severity}">${esc(ev.type)}</span>`;
+        const agent = ev.agent ? ` · ${esc(ev.agent)}` : "";
+        const tail = ev.title ? ` — ${esc(ev.title)}` : ev.stage ? ` — ${esc(ev.stage)}` : ev.path ? ` — ${esc(ev.path)}` : "";
+        const ts = ev.at ? new Date(ev.at).toLocaleTimeString() : "";
+        node.innerHTML = `
+          <div class="row1"><div>${typeHtml}${agent}${tail}</div><div class="ts">${esc(ts)}</div></div>
+          <pre>${esc(JSON.stringify(ev))}</pre>
+        `;
+        log.prepend(node);
+      }
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, (c) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[c]));
+      }
+    </script>
+  </body>
+</html>

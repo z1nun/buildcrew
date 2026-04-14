@@ -7,11 +7,13 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "buildcrew": "./bin/setup.js"
+    "buildcrew": "./bin/setup.js",
+    "buildcrew-dashboard": "./bin/dashboard.js"
   },
   "files": [
     "bin/",
     "agents/",
+    "dashboard/",
     "templates/",
     "README.md",
     "LICENSE"
@@ -34,7 +36,8 @@
     "url": "https://github.com/z1nun/buildcrew.git"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "dashboard": "node bin/dashboard.js"
   },
   "devDependencies": {
     "vitest": "^4.1.0"

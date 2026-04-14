@@ -5,3 +5,5 @@ node_modules/
 .env
 .claude/pipeline/
 .claude/harness-backup/
+.claude/dashboard/events.jsonl
+.claude/dashboard/replays/
