@@ -49,7 +49,7 @@ const ROOMS = {
 
 export class TownScene extends Phaser.Scene {
   constructor() {
-    super({ key: "TownScene" });
+    super({ key: "TownScene", active: true });
     this.agents = new Map();
     this.rooms = new Map();
     this.roomTileSprites = new Map();

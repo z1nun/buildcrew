@@ -49,16 +49,32 @@ function updateLayout() {
 updateLayout();
 window.addEventListener("resize", updateLayout);
 
-// Wire SSE once scenes are active
+// Wire SSE once scenes are active. Safety net: if any scene fails to boot
+// within 3 seconds, still connect SSE so the log panel works.
+let attached = false;
+const wire = () => {
+  if (attached) return;
+  attached = true;
+  const town = game.scene.getScene("TownScene");
+  const board = game.scene.getScene("BillboardScene");
+  attachDispatcher({ town, board, ui: uiRefs(), logPanel });
+};
 const readyTimer = setInterval(() => {
   const scenes = ["TownScene", "BillboardScene", "StageLadderScene", "MetricsTimelineScene"]
     .map((k) => game.scene.getScene(k));
-  if (scenes.every((s) => s?.scene.isActive())) {
+  const allActive = scenes.every((s) => s && s.scene.isActive());
+  if (allActive) {
     clearInterval(readyTimer);
-    const [town, board] = scenes;
-    attachDispatcher({ town, board, ui: uiRefs(), logPanel });
+    wire();
   }
 }, 50);
+setTimeout(() => {
+  if (!attached) {
+    console.warn("[dashboard] scenes not all active after 3s — wiring SSE anyway");
+    clearInterval(readyTimer);
+    wire();
+  }
+}, 3000);
 
 function uiRefs() {
   return {

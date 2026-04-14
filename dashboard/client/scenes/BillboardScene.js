@@ -15,7 +15,7 @@ const PALETTE = {
 };
 
 export class BillboardScene extends Phaser.Scene {
-  constructor() { super({ key: "BillboardScene" }); }
+  constructor() { super({ key: "BillboardScene", active: true }); }
 
   create() {
     const h = this.registry.get("billboardHeight") ?? 72;

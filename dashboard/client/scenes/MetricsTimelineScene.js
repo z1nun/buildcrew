@@ -26,7 +26,7 @@ const SPLIT = 0.7; // 70% timeline, 30% metrics
 
 export class MetricsTimelineScene extends Phaser.Scene {
   constructor() {
-    super({ key: "MetricsTimelineScene" });
+    super({ key: "MetricsTimelineScene", active: true });
     this.barElements = new Map(); // agentId → {row, bars:[]}
     this.markerElements = [];
   }

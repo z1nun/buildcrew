@@ -21,7 +21,7 @@ const PALETTE = {
 
 export class StageLadderScene extends Phaser.Scene {
   constructor() {
-    super({ key: "StageLadderScene" });
+    super({ key: "StageLadderScene", active: true });
     this.pills = new Map();
   }
 
