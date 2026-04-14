@@ -11,11 +11,13 @@ import { setupSfx } from "./sfx.js";
 import { mountLogPanel } from "./logpanel.js";
 import { mountModals } from "./modals.js";
 import { mountControls } from "./controls.js";
+import { mountCommand } from "./command.js";
 
 setupSfx();
 mountModals();
 const logPanel = mountLogPanel();
 mountControls({ logPanel });
+mountCommand({ logPanel });
 
 const BILLBOARD_H = 60;
 const LADDER_H = 68;

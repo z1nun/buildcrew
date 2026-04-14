@@ -43,6 +43,7 @@ export function mountLogPanel() {
       <div class="lp-tabs">
         <button class="lp-tab active" data-mode="events">📋 Events</button>
         <button class="lp-tab" data-mode="dialogue">💬 Dialogue</button>
+        <button class="lp-tab" data-mode="terminal">⌨ Terminal</button>
       </div>
       <div class="lp-controls">
         <select id="lp-agent-filter"><option value="">all agents</option></select>
@@ -67,14 +68,16 @@ export function mountLogPanel() {
 
   const state = {
     events: [],       // most recent first
+    terminal: [],     // chronological (oldest first)
     agents: new Set(),
     agentFilter: "",
     typeFilter: "",
-    mode: "events",   // "events" | "dialogue"
+    mode: "events",   // "events" | "dialogue" | "terminal"
   };
 
   function render() {
     if (state.mode === "dialogue") return renderDialogue();
+    if (state.mode === "terminal") return renderTerminal();
 
     const filtered = state.events.filter(passesFilter);
     metaEl.textContent =
@@ -256,6 +259,61 @@ export function mountLogPanel() {
   function allEvents() { return state.events; }
   window._dashboardAllEvents = allEvents;
 
+  function renderTerminal() {
+    metaEl.textContent = `⌨ ${state.terminal.length} lines · raw claude -p stream`;
+    rowsEl.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    for (const line of state.terminal) frag.appendChild(renderTerminalLine(line));
+    rowsEl.appendChild(frag);
+    rowsEl.scrollTop = rowsEl.scrollHeight;
+  }
+
+  function renderTerminalLine(line) {
+    const el = document.createElement("div");
+    el.className = `lp-term-line lp-term-${line.kind}`;
+    if (line.kind === "meta") {
+      el.textContent = line.text;
+    } else if (line.kind === "err") {
+      el.textContent = line.text;
+    } else if (line.kind === "out") {
+      el.textContent = renderStreamPayload(line.payload);
+    }
+    return el;
+  }
+
+  function renderStreamPayload(p) {
+    if (!p) return "";
+    if (p.raw) return p.raw;
+    // Claude -p stream-json common shapes
+    if (p.type === "system") {
+      const sub = p.subtype ? `[${p.subtype}]` : "";
+      return `system ${sub}`.trim();
+    }
+    if (p.type === "assistant" && p.message?.content) {
+      return p.message.content.map((c) => {
+        if (c.type === "text") return c.text;
+        if (c.type === "tool_use") return `◆ ${c.name}(${JSON.stringify(c.input).slice(0, 100)})`;
+        return JSON.stringify(c).slice(0, 200);
+      }).join("\n");
+    }
+    if (p.type === "user" && p.message?.content) {
+      return p.message.content.map((c) => {
+        if (c.type === "tool_result") return `→ ${JSON.stringify(c.content).slice(0, 200)}`;
+        return JSON.stringify(c).slice(0, 200);
+      }).join("\n");
+    }
+    if (p.type === "result") {
+      return `result: ${p.subtype ?? ""} ${p.result ?? ""}`.trim();
+    }
+    return JSON.stringify(p).slice(0, 300);
+  }
+
+  function pushTerminal(line) {
+    state.terminal.push(line);
+    if (state.terminal.length > 2000) state.terminal.splice(0, state.terminal.length - 2000);
+    if (state.mode === "terminal" && !isPaused()) renderTerminal();
+  }
+
   function summarize(ev) {
     switch (ev.type) {
       case "session.start":
@@ -343,7 +401,7 @@ export function mountLogPanel() {
 
   render();
 
-  return { push };
+  return { push, pushTerminal };
 }
 
 async function copyToClipboard(text) {
