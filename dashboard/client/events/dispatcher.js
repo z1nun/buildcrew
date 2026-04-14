@@ -4,7 +4,7 @@
  */
 
 import { session } from "../state/session.js";
-import { interceptForPause } from "../controls.js";
+import { isPaused } from "../controls.js";
 
 export function attachDispatcher({ town, board, ui, logPanel }) {
   const es = new EventSource("/events");
@@ -22,15 +22,14 @@ export function attachDispatcher({ town, board, ui, logPanel }) {
     try { ev = JSON.parse(msg.data); }
     catch { return console.warn("[dispatcher] bad event", msg.data); }
 
-    // State always updates (so export works consistently even when paused)
+    // ALWAYS record — state store + log panel's internal events list.
+    // Pause only affects rendering (see logpanel.push + scenes below).
     session.handleEvent(ev);
     ui.count.textContent = `${session.state.eventCount} events`;
+    logPanel?.push(ev);
 
-    // Log panel may be paused via controls
-    const queued = interceptForPause(ev, logPanel);
-    if (!queued) logPanel?.push(ev);
-
-    handleAnimation(ev, town, board);
+    // Scene animations pause when user pressed pause button
+    if (!isPaused()) handleAnimation(ev, town, board);
   };
 }
 

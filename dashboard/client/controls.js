@@ -1,11 +1,9 @@
 /**
- * Status-bar controls: pause/resume stream + export session to JSONL.
+ * Status-bar controls: pause/resume render + export session JSONL.
  *
- * Pause: queues incoming events until resumed. Scenes and metrics still
- *        get events as they arrive (state stays consistent) but the
- *        log panel + animations can be frozen by the pause flag.
- *        Simplest behavior: when paused, the SSE still feeds state/store,
- *        but new events are NOT pushed to the log panel until resumed.
+ * Pause model (fixed): every event is always recorded to state.events and
+ * the session store. Pause only stops DOM re-renders and scene animations.
+ * This keeps export/state consistent regardless of pause state.
  */
 
 import { session } from "./state/session.js";
@@ -13,12 +11,9 @@ import { toast } from "./modals.js";
 
 const state = {
   paused: false,
-  queue: [],
-  logPanel: null,
 };
 
 export function mountControls({ logPanel }) {
-  state.logPanel = logPanel;
   const pauseBtn = document.getElementById("btn-pause");
   const exportBtn = document.getElementById("btn-export");
 
@@ -27,9 +22,7 @@ export function mountControls({ logPanel }) {
     pauseBtn.classList.toggle("active", state.paused);
     pauseBtn.textContent = state.paused ? "▶ resume" : "⏸ pause";
     if (!state.paused) {
-      // Flush queue into log panel
-      for (const ev of state.queue) state.logPanel?.push(ev);
-      state.queue = [];
+      window.dispatchEvent(new CustomEvent("dashboard:resumed"));
       toast("resumed");
     } else {
       toast("paused · events still recorded");
@@ -39,15 +32,6 @@ export function mountControls({ logPanel }) {
   exportBtn.addEventListener("click", () => {
     exportSession();
   });
-}
-
-export function interceptForPause(ev, logPanel) {
-  // Called by dispatcher. Returns true if event was queued (caller should skip log push).
-  if (state.paused) {
-    state.queue.push(ev);
-    return true;
-  }
-  return false;
 }
 
 export function isPaused() {
@@ -75,10 +59,9 @@ function exportSession() {
 }
 
 function reconstructEvents() {
-  // Prefer the panel's ordered list; fall back to session derived data.
   const panelEvents = window._dashboardAllEvents?.() ?? [];
   if (panelEvents.length > 0) {
-    // Panel is most-recent first; export in chronological order
+    // Panel stores most-recent-first; export chronologically
     return [...panelEvents].reverse();
   }
   return [];

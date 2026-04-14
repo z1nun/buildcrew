@@ -12,6 +12,7 @@
 
 import { session } from "./state/session.js";
 import { openIssueModal, openAgentPanel, toast } from "./modals.js";
+import { isPaused } from "./controls.js";
 
 const MAX_ROWS = 500;
 
@@ -180,8 +181,13 @@ export function mountLogPanel() {
       opt.textContent = ev.agent;
       agentFilterEl.appendChild(opt);
     }
-    render();
+    // Skip DOM render while paused — event is still recorded in state.events,
+    // so export captures it correctly.
+    if (!isPaused()) render();
   }
+
+  // When resume is pressed, re-render to catch up on queued events
+  window.addEventListener("dashboard:resumed", () => render());
 
   // -------- filters --------
 
