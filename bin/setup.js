@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { readdir, copyFile, mkdir, readFile, writeFile, access } from "fs/promises";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -9,6 +9,7 @@ const AGENTS_SRC = join(__dirname, "..", "agents");
 const TEMPLATES_SRC = join(__dirname, "..", "templates");
 const TARGET_DIR = join(process.cwd(), ".claude", "agents");
 const HARNESS_DIR = join(process.cwd(), ".claude", "harness");
+const EMIT_SCRIPT = resolve(__dirname, "..", "dashboard", "hooks", "emit.js");
 const PKG = JSON.parse(await readFile(join(__dirname, "..", "package.json"), "utf-8"));
 const VERSION = PKG.version;
 
@@ -556,6 +557,41 @@ async function runInstall(force) {
     }
   }
 
+  // ─── Step 2d: Dashboard (hooks + permissions + how-to-start) ───
+  try {
+    const dashboardInstalled = await isDashboardInstalled();
+    if (dashboardInstalled) {
+      log(`  ${GREEN}Dashboard hooks:${RESET} installed ✓\n`);
+    } else {
+      log(`  ${YELLOW}Dashboard${RESET} gives you a live web UI showing agents working in real-time.`);
+      log(`  ${DIM}Shows: pipeline progress, agent dialogue, file writes, issue warnings${RESET}\n`);
+      const answer = await ask(`  Install dashboard (hooks + recommended permissions)? ${BOLD}(Y/n)${RESET} `);
+      if (answer === "" || answer === "y" || answer === "yes") {
+        try {
+          const { install } = await import("../dashboard/server/installer.js");
+          const result = await install({
+            scope: "project",
+            cwd: process.cwd(),
+            emitScript: EMIT_SCRIPT,
+            withPermissions: true,
+          });
+          log(`\n  ${GREEN}${BOLD}Dashboard installed!${RESET}`);
+          log(`  ${DIM}  hooks:       ${result.settingsPath}${RESET}`);
+          if (result.permissions?.permPath) {
+            log(`  ${DIM}  permissions: ${result.permissions.permPath}${RESET}`);
+          }
+          log(`\n  ${BOLD}Start dashboard:${RESET} ${CYAN}npx buildcrew dashboard${RESET}`);
+          log(`  ${DIM}then open http://localhost:3737 in a browser${RESET}\n`);
+        } catch (err) {
+          log(`\n  ${RED}Dashboard install failed:${RESET} ${err.message}`);
+          log(`  Run manually: ${BOLD}npx buildcrew-dashboard --install --with-permissions${RESET}\n`);
+        }
+      } else {
+        log(`\n  ${DIM}Skipped. Install later: npx buildcrew-dashboard --install --with-permissions${RESET}\n`);
+      }
+    }
+  } catch { /* ignore, non-fatal */ }
+
   // ─── Step 3: Project harness ───
   if (!(await exists(join(HARNESS_DIR, "project.md")))) {
     const initAnswer = await ask(`  Generate project harness? ${DIM}(auto-detects your stack)${RESET} ${BOLD}(Y/n)${RESET} `);
@@ -588,6 +624,34 @@ async function runList() {
   log("");
 }
 
+async function isDashboardInstalled() {
+  try {
+    const settingsPath = join(process.cwd(), ".claude", "settings.json");
+    const content = await readFile(settingsPath, "utf-8");
+    return content.includes("buildcrew-dashboard");
+  } catch {
+    return false;
+  }
+}
+
+async function runDashboard() {
+  // Pass through to bin/dashboard.js with remaining args so `npx buildcrew dashboard --install`
+  // and `npx buildcrew dashboard` both work identically to their -dashboard counterparts.
+  const dashboardEntry = resolve(__dirname, "dashboard.js");
+  const passthrough = process.argv.slice(3); // drop: node, setup.js, "dashboard"
+  const { spawn } = await import("child_process");
+  const child = spawn(process.execPath, [dashboardEntry, ...passthrough], {
+    stdio: "inherit",
+    cwd: process.cwd(),
+    env: process.env,
+  });
+  child.on("exit", (code) => process.exit(code ?? 0));
+  child.on("error", (err) => {
+    console.error(`${RED}Dashboard failed to start:${RESET} ${err.message}`);
+    process.exit(1);
+  });
+}
+
 async function runUninstall() {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
   if (!(await exists(TARGET_DIR))) { log(`${YELLOW}No agents found.${RESET}`); return; }
@@ -614,11 +678,13 @@ async function main() {
   ${BOLD}buildcrew${RESET} v${VERSION} — 15 AI agents for Claude Code
 
   ${BOLD}Commands:${RESET}
-    npx buildcrew              Install agents
+    npx buildcrew              Install agents (also offers dashboard + harness)
     npx buildcrew init         Auto-generate project harness (zero questions)
     npx buildcrew add          List harness templates
     npx buildcrew add <name>   Add a harness template
     npx buildcrew harness      Show harness file status
+    npx buildcrew dashboard    Start the live monitoring dashboard
+                               (pass --install, --with-permissions, etc.)
 
   ${BOLD}Options:${RESET}
     --force, -f    Overwrite existing files
@@ -627,10 +693,11 @@ async function main() {
     --version      Show version
 
   ${BOLD}Setup:${RESET}
-    ${GREEN}1.${RESET} npx buildcrew          ${DIM}Install agents${RESET}
-    ${GREEN}2.${RESET} npx buildcrew init     ${DIM}Auto-generate harness from codebase${RESET}
+    ${GREEN}1.${RESET} npx buildcrew           ${DIM}Install agents + optional dashboard hooks${RESET}
+    ${GREEN}2.${RESET} npx buildcrew init      ${DIM}Auto-generate harness from codebase${RESET}
     ${GREEN}3.${RESET} Edit .claude/harness/   ${DIM}Customize (replace <!-- comments -->)${RESET}
-    ${GREEN}4.${RESET} @buildcrew [task]   ${DIM}Start working${RESET}
+    ${GREEN}4.${RESET} npx buildcrew dashboard ${DIM}(optional) watch agents work in real-time${RESET}
+    ${GREEN}5.${RESET} @buildcrew [task]       ${DIM}Start working${RESET}
 
   ${BOLD}More info:${RESET} https://github.com/z1nun/buildcrew
 `);
@@ -642,6 +709,7 @@ async function main() {
   if (command === "init") return runInit(force);
   if (command === "add") return runAdd(subcommand, force);
   if (command === "harness") return runHarnessStatus();
+  if (command === "dashboard") return runDashboard();
 
   return runInstall(force);
 }
