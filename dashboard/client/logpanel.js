@@ -11,6 +11,7 @@
  */
 
 import { session } from "./state/session.js";
+import { openIssueModal, openAgentPanel, toast } from "./modals.js";
 
 const MAX_ROWS = 500;
 
@@ -109,8 +110,24 @@ export function mountLogPanel() {
       </div>
       <div class="lp-row-body">${summary}</div>
     `;
-    // Expand on click
-    row.addEventListener("click", () => {
+    // Row click → smart action per type
+    row.addEventListener("click", (e) => {
+      // If clicking inside an open detail, don't collapse
+      if (e.target.closest(".lp-row-detail")) return;
+
+      if (ev.type === "issue.found") {
+        // Use oldest-first order for surrounding context
+        const ordered = [...state.events].reverse();
+        openIssueModal(ev, ordered);
+        return;
+      }
+      if (ev.type === "file.written" && ev.path) {
+        copyToClipboard(ev.path)
+          .then(() => toast(`copied: ${ev.path.split("/").pop()}`))
+          .catch(() => toast("copy failed"));
+        return;
+      }
+      // Default: toggle raw JSON for inspection
       const existing = row.querySelector(".lp-row-detail");
       if (existing) { existing.remove(); return; }
       const detail = document.createElement("pre");
@@ -120,6 +137,10 @@ export function mountLogPanel() {
     });
     return row;
   }
+
+  // expose events for modals that need context
+  function allEvents() { return state.events; }
+  window._dashboardAllEvents = allEvents;
 
   function summarize(ev) {
     switch (ev.type) {
@@ -180,18 +201,30 @@ export function mountLogPanel() {
     render();
   });
 
-  // Listen for agent-select from canvas (click a character → filter log)
+  // Listen for agent-select from canvas (click a character → filter log + open side panel)
   window.addEventListener("dashboard:agent-select", (e) => {
     const agent = e.detail?.agent;
     if (!agent) return;
     state.agentFilter = agent;
     agentFilterEl.value = agent;
     render();
+    openAgentPanel(agent, state.events, session.state);
   });
 
   render();
 
   return { push };
+}
+
+async function copyToClipboard(text) {
+  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+  // Fallback for older browsers
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch {}
+  ta.remove();
 }
 
 function formatTime(iso) {

@@ -177,8 +177,25 @@
     <div id="statusbar">
       <span id="conn" class="dead">connecting…</span>
       <span id="count">0 events</span>
-      <span>🏠 buildcrew town · Part A</span>
+      <span style="flex: 1"></span>
+      <button id="btn-pause" class="sb-btn" title="pause event stream">⏸ pause</button>
+      <button id="btn-export" class="sb-btn" title="download session as JSONL">⇩ export</button>
+      <span>🏠 buildcrew town</span>
     </div>
+    <style>
+      #statusbar .sb-btn {
+        background: none;
+        border: 1px solid var(--wood);
+        color: var(--cream-muted);
+        font: inherit;
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #statusbar .sb-btn:hover { border-color: var(--wood-light); color: var(--cream); }
+      #statusbar .sb-btn.active { background: var(--wood); color: var(--cream); }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
