@@ -150,6 +150,10 @@ class SessionStore {
         active: true,
         eventCount: 0,
         lastPrompt: null,
+        // Pipeline integrity tracking — catches Feature mode rule violations
+        dispatchedAgents: new Set(),   // agents that were actually dispatched
+        directWrites: 0,               // file.written attributed to "buildcrew" (lead)
+        warnings: [],                  // human-readable violation messages
       };
       sessions.set(sid, meta);
     }
@@ -157,9 +161,43 @@ class SessionStore {
     meta.eventCount += 1;
     meta.active = true;
     if (ev.type === "session.end") meta.active = false;
-    if (ev.type === "agent.dispatched" && ev.from === "buildcrew") {
-      meta.lastPrompt = ev.prompt ?? meta.lastPrompt;
+    if (ev.type === "agent.dispatched") {
+      if (ev.from === "buildcrew") meta.lastPrompt = ev.prompt ?? meta.lastPrompt;
+      if (ev.agent) meta.dispatchedAgents.add(ev.agent);
     }
+    if (ev.type === "file.written" && ev.agent === "buildcrew") {
+      meta.directWrites += 1;
+      if (meta.directWrites === 1) {
+        meta.warnings.push({
+          at,
+          kind: "direct-write",
+          message: "Team lead wrote files directly — Feature mode requires dispatching `developer`.",
+        });
+      }
+    }
+    if (ev.type === "session.end") {
+      // Post-session integrity check: any writes but no reviewer?
+      const wroteSomething = meta.directWrites > 0 || meta.dispatchedAgents.has("developer");
+      if (wroteSomething && !meta.dispatchedAgents.has("reviewer")) {
+        meta.warnings.push({
+          at,
+          kind: "no-reviewer",
+          message: "Session modified code but never dispatched `reviewer` — Feature mode pipeline violation.",
+        });
+      }
+    }
+  }
+
+  sessionWarnings(sessionId) {
+    return this.state.sessions.get(sessionId)?.warnings ?? [];
+  }
+
+  allWarnings() {
+    const out = [];
+    for (const [sid, meta] of this.state.sessions) {
+      for (const w of meta.warnings) out.push({ sessionId: sid, ...w });
+    }
+    return out;
   }
 
   sessionColor(sessionId) {

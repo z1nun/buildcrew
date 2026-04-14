@@ -111,11 +111,26 @@ export function mountLogPanel() {
       .filter((ev) => !state.agentFilter || ev.agent === state.agentFilter || (ev.type === "agent.dispatched" && ev.from === state.agentFilter))
       .reverse(); // oldest first, like a chat log
 
+    // Surface pipeline integrity warnings at the top of the dialogue
+    const warnings = state.sessionFilter
+      ? session.sessionWarnings(state.sessionFilter)
+      : session.allWarnings();
     metaEl.textContent = `💬 ${convo.length} lines of team dialogue` +
-      (state.agentFilter ? ` · ${state.agentFilter} only` : "");
+      (state.agentFilter ? ` · ${state.agentFilter} only` : "") +
+      (warnings.length ? ` · ⚠ ${warnings.length} warning` + (warnings.length > 1 ? "s" : "") : "");
 
     rowsEl.innerHTML = "";
     const frag = document.createDocumentFragment();
+    // Render warnings at the top so they're impossible to miss
+    for (const w of warnings) {
+      const warn = document.createElement("div");
+      warn.className = "lp-bubble lp-bubble-warning";
+      warn.innerHTML = `
+        <div class="lp-bubble-ts">⚠ ${esc(w.kind)}${w.sessionId ? ` · session #${esc(w.sessionId.slice(-6))}` : ""}</div>
+        <div class="lp-bubble-body"><span class="lp-bubble-who">🚨 pipeline integrity</span> ${esc(w.message)}</div>
+      `;
+      frag.appendChild(warn);
+    }
     for (const ev of convo) {
       const bubble = renderDialogueBubble(ev);
       if (bubble) frag.appendChild(bubble);

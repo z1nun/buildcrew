@@ -60,18 +60,26 @@ export function mountControls({ logPanel }) {
       const sessions = session.allSessions();
       const activeCount = session.activeSessions().length;
       const total = sessions.length;
+      const warnings = session.allWarnings();
+      const warnSuffix = warnings.length > 0 ? ` ⚠ ${warnings.length}` : "";
+
       if (total === 0) {
         sessionBadge.innerHTML = `<span class="sb-dot" style="background:#5c4a30"></span> 0 sessions`;
       } else if (state.sessionCycleIdx === -1) {
         sessionBadge.innerHTML =
           `<span class="sb-dot" style="background:${activeCount > 0 ? "#a8d994" : "#5c4a30"}"></span> ` +
-          `${activeCount}/${total} sessions`;
+          `${activeCount}/${total} sessions${warnSuffix}`;
       } else {
         const s = sessions[state.sessionCycleIdx];
+        const sw = session.sessionWarnings(s.id);
         sessionBadge.innerHTML =
           `<span class="sb-dot" style="background:${s.color}"></span> ` +
-          `#${s.id.slice(-6)}`;
+          `#${s.id.slice(-6)}${sw.length ? ` ⚠ ${sw.length}` : ""}`;
       }
+      sessionBadge.style.borderColor = warnings.length > 0 ? "#ff8566" : "";
+      sessionBadge.title = warnings.length > 0
+        ? `⚠ ${warnings.length} pipeline integrity warning(s) — click to inspect`
+        : "active sessions — click to filter";
     };
     refreshBadge();
     setInterval(refreshBadge, 2000); // keep active count fresh (idle timeout)

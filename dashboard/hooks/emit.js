@@ -85,9 +85,14 @@ function toEvent(kind, data) {
     case "file-written": {
       const path = data?.tool_input?.file_path;
       if (!path) return null;
+      // CC hook payload doesn't include "current subagent" info. We default to
+      // "buildcrew" (team lead) so the dashboard HONESTLY reveals when the lead
+      // is writing files directly — which is a pipeline violation per Feature
+      // mode rules. Dashboard's pipeline-integrity check warns on this.
       return {
         type: "file.written",
-        agent: data?.agent ?? "developer", path,
+        agent: data?.agent ?? "buildcrew", path,
+        tool_name: data?.tool_name,
         session_id: sessionId,
       };
     }
