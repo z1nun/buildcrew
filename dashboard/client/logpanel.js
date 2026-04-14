@@ -39,6 +39,13 @@ export function mountLogPanel() {
   if (!container) return;
 
   container.innerHTML = `
+    <div class="lp-project" id="lp-project">
+      <span class="lp-project-icon">📁</span>
+      <span class="lp-project-path" id="lp-project-path" title="project directory">—</span>
+    </div>
+    <div class="lp-session-tabs" id="lp-session-tabs">
+      <button class="lp-session-chip active" data-session="">All</button>
+    </div>
     <div class="lp-header">
       <div class="lp-tabs">
         <button class="lp-tab active" data-mode="events">📋 Events</button>
@@ -46,7 +53,6 @@ export function mountLogPanel() {
         <button class="lp-tab" data-mode="terminal">⌨ Terminal</button>
       </div>
       <div class="lp-controls">
-        <select id="lp-session-filter" title="filter by session"><option value="">all sessions</option></select>
         <select id="lp-agent-filter"><option value="">all agents</option></select>
         <select id="lp-type-filter">
           <option value="">all types</option>
@@ -59,13 +65,22 @@ export function mountLogPanel() {
     </div>
     <div class="lp-meta" id="lp-meta">0 events</div>
     <div class="lp-rows" id="lp-rows"></div>
+    <div class="lp-input-area">
+      <div class="lp-input-row">
+        <span class="lp-input-prompt">❯</span>
+        <input id="cmd-input" type="text" placeholder="@buildcrew ..." autocomplete="off" spellcheck="false" />
+        <button id="cmd-send">RUN</button>
+      </div>
+      <div class="lp-input-status" id="cmd-status">idle</div>
+    </div>
   `;
+  document.body.dataset.tab = "events";
 
   const rowsEl = document.getElementById("lp-rows");
   const metaEl = document.getElementById("lp-meta");
   const agentFilterEl = document.getElementById("lp-agent-filter");
   const typeFilterEl = document.getElementById("lp-type-filter");
-  const sessionFilterEl = document.getElementById("lp-session-filter");
+  const sessionTabsEl = document.getElementById("lp-session-tabs");
   const clearBtn = document.getElementById("lp-clear");
 
   const state = {
@@ -382,12 +397,7 @@ export function mountLogPanel() {
     }
     if (ev.session_id && !state.sessionIds.has(ev.session_id)) {
       state.sessionIds.add(ev.session_id);
-      const opt = document.createElement("option");
-      opt.value = ev.session_id;
-      const short = ev.session_id.slice(-6);
-      opt.textContent = `session #${short}`;
-      opt.style.color = session.sessionColor(ev.session_id);
-      sessionFilterEl.appendChild(opt);
+      addSessionChip(ev.session_id);
       // Notify statusbar badge
       window.dispatchEvent(new CustomEvent("dashboard:sessions-changed"));
     }
@@ -409,38 +419,79 @@ export function mountLogPanel() {
     state.typeFilter = e.target.value;
     render();
   });
-  sessionFilterEl.addEventListener("change", (e) => {
-    state.sessionFilter = e.target.value;
-    render();
-  });
   clearBtn.addEventListener("click", () => {
     state.agentFilter = "";
     state.typeFilter = "";
     state.sessionFilter = "";
     agentFilterEl.value = "";
     typeFilterEl.value = "";
-    sessionFilterEl.value = "";
+    selectSessionChip("");
     render();
+  });
+
+  // Session chip behavior (delegated click on the tab row)
+  sessionTabsEl.addEventListener("click", (e) => {
+    const chip = e.target.closest(".lp-session-chip");
+    if (!chip) return;
+    selectSessionChip(chip.dataset.session ?? "");
   });
 
   // External trigger: statusbar badge can filter to a specific session
   window.addEventListener("dashboard:select-session", (e) => {
     const sid = e.detail?.sessionId ?? "";
-    state.sessionFilter = sid;
-    sessionFilterEl.value = sid;
-    render();
+    selectSessionChip(sid);
   });
+
+  function selectSessionChip(sid) {
+    state.sessionFilter = sid;
+    for (const chip of sessionTabsEl.querySelectorAll(".lp-session-chip")) {
+      chip.classList.toggle("active", (chip.dataset.session ?? "") === sid);
+    }
+    render();
+  }
+
+  function addSessionChip(sessionId) {
+    const chip = document.createElement("button");
+    chip.className = "lp-session-chip";
+    chip.dataset.session = sessionId;
+    const short = sessionId.slice(-6);
+    const color = session.sessionColor(sessionId);
+    chip.innerHTML = `<span class="lp-chip-dot" style="background:${color}"></span>#${short}`;
+    chip.title = `session ${sessionId}`;
+    sessionTabsEl.appendChild(chip);
+  }
 
   // Tab switcher
   for (const tabBtn of container.querySelectorAll(".lp-tab")) {
     tabBtn.addEventListener("click", () => {
       state.mode = tabBtn.dataset.mode;
+      document.body.dataset.tab = state.mode;
       for (const b of container.querySelectorAll(".lp-tab")) {
         b.classList.toggle("active", b === tabBtn);
       }
       render();
+      if (state.mode === "terminal") {
+        // Autofocus the input when switching to Terminal tab
+        const input = document.getElementById("cmd-input");
+        if (input && !input.disabled) input.focus();
+      }
     });
   }
+
+  // Fetch project info once and populate the project picker
+  fetch("/project")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((info) => {
+      if (!info) return;
+      const pathEl = document.getElementById("lp-project-path");
+      if (pathEl) {
+        pathEl.textContent = info.name ?? info.path ?? "(unknown)";
+        pathEl.title = info.path ?? "";
+      }
+    })
+    .catch(() => {});
+
+  // (session count now shown by the session-chip row + statusbar badge)
 
   // Listen for agent-select from canvas (click a character → filter log + open side panel)
   window.addEventListener("dashboard:agent-select", (e) => {

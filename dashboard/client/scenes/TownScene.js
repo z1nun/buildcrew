@@ -72,6 +72,7 @@ export class TownScene extends Phaser.Scene {
     this.outsideBg = this.add.tileSprite(0, 0, 10, 10, "tile-check");
     this.outsideBg.setOrigin(0, 0);
     this.outsideBg.setAlpha(0.7);
+    // Redundant title removed — billboard already shows "🏠 BUILDCREW TOWN"
 
     this.layout();
 
@@ -141,23 +142,24 @@ export class TownScene extends Phaser.Scene {
     this.wallGraphics.lineStyle(1, PALETTE.woodDark, 0.8);
     this.wallGraphics.strokeRoundedRect(x, y, w, h, 4);
 
-    // Nameplate
+    // Nameplate — slim, low-contrast so it doesn't compete with characters
     let room = this.rooms.get(name);
     if (!room) {
-      const plateBg = this.add.rectangle(0, 0, 100, 18, PALETTE.woodDark, 1).setOrigin(0, 0).setDepth(10);
-      plateBg.setStrokeStyle(1, PALETTE.wood);
+      const plateBg = this.add.rectangle(0, 0, 100, 14, 0x2a2420, 0.9).setOrigin(0, 0).setDepth(10);
+      plateBg.setStrokeStyle(1, PALETTE.wood, 0.8);
       const plateText = this.add.text(0, 0, `${icon} ${name}`, {
         fontFamily: "ui-monospace, monospace",
-        fontSize: "10px",
+        fontSize: "9px",
         fontStyle: "bold",
-        color: "#f5ebd7",
+        color: "#c9a876",
+        letterSpacing: 1,
       }).setOrigin(0, 0).setDepth(11);
       room = { plateBg, plateText, bounds: null };
       this.rooms.set(name, room);
     }
-    room.plateBg.setPosition(x + 6, y - 10);
-    room.plateText.setPosition(x + 14, y - 8);
-    room.plateBg.width = room.plateText.width + 16;
+    room.plateBg.setPosition(x + 8, y - 7);
+    room.plateText.setPosition(x + 14, y - 6);
+    room.plateBg.width = room.plateText.width + 12;
     room.bounds = { x, y, w, h };
   }
 

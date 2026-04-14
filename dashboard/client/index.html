@@ -72,6 +72,77 @@
         }
         body:not(.log-hidden) #logpanel { transform: translateX(0); }
       }
+      /* Project/session picker strip above the tabs */
+      .lp-project {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: #1a1410;
+        border-bottom: 1px solid var(--wood-dark);
+        font-size: 11px;
+        color: var(--cream-muted);
+      }
+      .lp-project-icon { color: var(--wood-light); }
+      .lp-project-path {
+        color: var(--cream);
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+      .lp-project-pill {
+        padding: 2px 7px;
+        background: var(--wood-dark);
+        border: 1px solid var(--wood);
+        border-radius: 3px;
+        font-size: 10px;
+        cursor: default;
+      }
+      /* Session chip row (between project strip and main header) */
+      .lp-session-tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 8px 14px;
+        background: rgba(26,20,16,0.7);
+        border-bottom: 1px solid var(--wood-dark);
+        scrollbar-width: thin;
+        scrollbar-color: var(--wood) transparent;
+      }
+      .lp-session-tabs::-webkit-scrollbar { height: 4px; }
+      .lp-session-tabs::-webkit-scrollbar-thumb { background: var(--wood); border-radius: 2px; }
+      .lp-session-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        background: transparent;
+        color: var(--cream-muted);
+        border: 1px solid var(--wood-dark);
+        border-radius: 12px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .lp-session-chip:hover {
+        border-color: var(--wood-light);
+        color: var(--cream);
+      }
+      .lp-session-chip.active {
+        background: var(--wood);
+        color: var(--cream);
+        border-color: var(--wood-light);
+      }
+      .lp-chip-dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+      }
       .lp-header {
         padding: 12px 14px;
         border-bottom: 1px solid var(--wood-dark);
@@ -177,7 +248,7 @@
       .lp-bubble-warning .lp-bubble-who { color: var(--crit); }
       /* Terminal lines */
       .lp-term-line {
-        padding: 3px 14px;
+        padding: 4px 14px;
         font-size: 12px;
         font-family: ui-monospace, monospace;
         white-space: pre-wrap;
@@ -192,6 +263,67 @@
         font-style: italic;
         font-weight: bold;
       }
+      /* Command input — always-present footer inside the log panel.
+       * Only visible when Terminal tab is active (controlled via body[data-tab]). */
+      .lp-input-area {
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        padding: 10px 14px;
+        background: #1a1410;
+        border-top: 2px solid var(--wood);
+      }
+      body[data-tab="terminal"] .lp-input-area { display: flex; }
+      .lp-input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .lp-input-prompt {
+        color: var(--wood-light);
+        font-weight: bold;
+        font-size: 15px;
+        user-select: none;
+      }
+      #cmd-input {
+        flex: 1;
+        background: transparent;
+        border: 1px solid var(--wood-dark);
+        color: var(--cream);
+        font-family: inherit;
+        font-size: 13px;
+        padding: 7px 10px;
+        border-radius: 4px;
+        outline: none;
+        caret-color: var(--wood-light);
+      }
+      #cmd-input:focus { border-color: var(--wood-light); }
+      #cmd-input::placeholder { color: var(--cream-muted); font-style: italic; }
+      #cmd-input:disabled { opacity: 0.5; }
+      #cmd-send {
+        background: var(--wood);
+        border: 1px solid var(--wood-light);
+        color: var(--cream);
+        font: inherit;
+        font-size: 11px;
+        padding: 7px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        letter-spacing: 1px;
+      }
+      #cmd-send:disabled { opacity: 0.4; cursor: not-allowed; }
+      #cmd-send:hover:not(:disabled) { background: var(--wood-light); color: #1a1410; }
+      .lp-input-status {
+        font-size: 10px;
+        color: var(--cream-muted);
+        text-align: right;
+      }
+      .lp-input-status.running { color: var(--warn); }
+      .lp-input-status.running::before {
+        content: "◉ ";
+        animation: pulse 1.2s infinite;
+      }
+      @keyframes pulse { 50% { opacity: 0.3; } }
       .lp-controls {
         display: flex;
         gap: 6px;
@@ -314,81 +446,8 @@
         cursor: pointer;
       }
     </style>
-    <style>
-      /* Command bar above billboard */
-      #cmdbar {
-        position: fixed;
-        top: 0; left: 0;
-        right: var(--log-width);
-        height: 48px;
-        background: #1a1410;
-        border-bottom: 2px solid var(--wood);
-        display: flex;
-        align-items: center;
-        padding: 0 14px;
-        gap: 10px;
-        z-index: 20;
-        transition: right 0.2s ease-out;
-      }
-      body.log-hidden #cmdbar { right: 0; }
-      @media (max-width: 700px) { #cmdbar { right: 0 !important; } }
-      #cmdbar .cmdbar-prompt {
-        color: var(--wood-light);
-        font-weight: bold;
-        font-size: 14px;
-        user-select: none;
-      }
-      #cmdbar input {
-        flex: 1;
-        background: transparent;
-        border: 0;
-        color: var(--cream);
-        font-family: inherit;
-        font-size: 14px;
-        padding: 8px 6px;
-        outline: none;
-        caret-color: var(--wood-light);
-      }
-      #cmdbar input::placeholder { color: var(--cream-muted); font-style: italic; }
-      #cmdbar input:disabled { opacity: 0.5; }
-      #cmdbar .cmdbar-send {
-        background: var(--wood);
-        border: 1px solid var(--wood-light);
-        color: var(--cream);
-        font: inherit;
-        font-size: 12px;
-        padding: 6px 14px;
-        border-radius: 4px;
-        cursor: pointer;
-        letter-spacing: 1px;
-      }
-      #cmdbar .cmdbar-send:disabled { opacity: 0.4; cursor: not-allowed; }
-      #cmdbar .cmdbar-send:hover:not(:disabled) { background: var(--wood-light); color: #1a1410; }
-      #cmdbar .cmdbar-status {
-        font-size: 11px;
-        color: var(--cream-muted);
-        min-width: 70px;
-        text-align: right;
-      }
-      #cmdbar .cmdbar-status.running {
-        color: var(--warn);
-      }
-      #cmdbar .cmdbar-status.running::before {
-        content: "◉ ";
-        animation: pulse 1.2s infinite;
-      }
-      @keyframes pulse { 50% { opacity: 0.3; } }
-      /* Stage area sits below command bar */
-      #stage { top: 48px; }
-    </style>
   </head>
   <body>
-    <div id="cmdbar">
-      <span class="cmdbar-prompt">❯</span>
-      <input id="cmd-input" type="text" placeholder="@buildcrew ..." autocomplete="off" spellcheck="false" />
-      <span class="cmdbar-status" id="cmd-status">idle</span>
-      <button id="cmd-send" class="cmdbar-send">RUN</button>
-    </div>
     <div id="stage">
       <div id="app"></div>
     </div>

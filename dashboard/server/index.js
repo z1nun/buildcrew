@@ -69,6 +69,13 @@ export function createServer(opts = {}) {
         return await handleCommandStream(req, res);
       }
 
+      if (req.method === "GET" && pathname === "/project") {
+        return json(res, 200, {
+          path: cwd,
+          name: path.basename(cwd),
+        });
+      }
+
       if (req.method === "POST" && pathname === "/command/cancel") {
         return await handleCommandCancel(req, res);
       }
