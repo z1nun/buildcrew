@@ -11,12 +11,14 @@ import { toast } from "./modals.js";
 
 const state = {
   paused: false,
+  sessionCycleIdx: -1, // -1 = all sessions, else index into activeSessions
 };
 
 export function mountControls({ logPanel }) {
   const pauseBtn = document.getElementById("btn-pause");
   const exportBtn = document.getElementById("btn-export");
   const logToggle = document.getElementById("btn-toggle-log");
+  const sessionBadge = document.getElementById("sessions-badge");
 
   pauseBtn.addEventListener("click", () => {
     state.paused = !state.paused;
@@ -50,6 +52,42 @@ export function mountControls({ logPanel }) {
     logToggle.addEventListener("click", () => {
       document.body.classList.toggle("log-hidden");
       refresh();
+    });
+  }
+
+  if (sessionBadge) {
+    const refreshBadge = () => {
+      const sessions = session.allSessions();
+      const activeCount = session.activeSessions().length;
+      const total = sessions.length;
+      if (total === 0) {
+        sessionBadge.innerHTML = `<span class="sb-dot" style="background:#5c4a30"></span> 0 sessions`;
+      } else if (state.sessionCycleIdx === -1) {
+        sessionBadge.innerHTML =
+          `<span class="sb-dot" style="background:${activeCount > 0 ? "#a8d994" : "#5c4a30"}"></span> ` +
+          `${activeCount}/${total} sessions`;
+      } else {
+        const s = sessions[state.sessionCycleIdx];
+        sessionBadge.innerHTML =
+          `<span class="sb-dot" style="background:${s.color}"></span> ` +
+          `#${s.id.slice(-6)}`;
+      }
+    };
+    refreshBadge();
+    setInterval(refreshBadge, 2000); // keep active count fresh (idle timeout)
+    window.addEventListener("dashboard:sessions-changed", refreshBadge);
+
+    // Click cycles: all → first session → next → all
+    sessionBadge.addEventListener("click", () => {
+      const sessions = session.allSessions();
+      if (sessions.length === 0) return;
+      state.sessionCycleIdx += 1;
+      if (state.sessionCycleIdx >= sessions.length) state.sessionCycleIdx = -1;
+      const sid = state.sessionCycleIdx === -1 ? "" : sessions[state.sessionCycleIdx].id;
+      window.dispatchEvent(new CustomEvent("dashboard:select-session", {
+        detail: { sessionId: sid },
+      }));
+      refreshBadge();
     });
   }
 }

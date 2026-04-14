@@ -245,6 +245,13 @@
         border-radius: 3px;
         font-size: 12px;
       }
+      .lp-sid {
+        font-size: 10px;
+        padding: 0 5px;
+        border-radius: 3px;
+        background: rgba(0,0,0,0.3);
+        font-family: ui-monospace, monospace;
+      }
       .lp-row-body {
         margin-top: 4px;
         font-size: 13px;
@@ -381,6 +388,7 @@
     <div id="statusbar">
       <span id="conn" class="dead">connecting…</span>
       <span id="count">0 events</span>
+      <span id="sessions-badge" class="sb-badge" title="active sessions — click to filter">0 sessions</span>
       <span style="flex: 1"></span>
       <button id="btn-pause" class="sb-btn" title="pause event stream">⏸ pause</button>
       <button id="btn-export" class="sb-btn" title="download session as JSONL">⇩ export</button>
@@ -400,10 +408,27 @@
       }
       #statusbar .sb-btn:hover { border-color: var(--wood-light); color: var(--cream); }
       #statusbar .sb-btn.active { background: var(--wood); color: var(--cream); }
+      #statusbar .sb-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border: 1px solid var(--wood);
+        border-radius: 10px;
+        font-size: 10px;
+        color: var(--cream-muted);
+        cursor: pointer;
+      }
+      #statusbar .sb-badge:hover { border-color: var(--wood-light); color: var(--cream); }
+      #statusbar .sb-badge .sb-dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        display: inline-block;
+      }
       @media (max-width: 700px) {
         #statusbar { font-size: 10px; gap: 6px; padding: 0 8px; }
         #statusbar .sb-label { display: none; }
         #statusbar .sb-btn { padding: 2px 6px; font-size: 10px; }
+        #statusbar .sb-badge { font-size: 9px; }
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>

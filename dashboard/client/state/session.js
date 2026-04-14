@@ -21,7 +21,23 @@ const initialState = () => ({
   // Issue titles (for timeline markers)
   issueMarkers: [],             // [{at, severity, title}]
   fileMarkers: [],              // [{at, agent, path}]
+  // Per-session metadata (NOT scene-rendered, used by log panel + statusbar)
+  sessions: new Map(),          // sessionId → { color, firstSeen, lastSeen, active, eventCount, lastPrompt }
 });
+
+// Distinct-looking colors for sessions. Cycles if more than 8 sessions.
+const SESSION_PALETTE = [
+  "#7ee0a2", // green
+  "#5aa9ff", // blue
+  "#ffb84a", // orange
+  "#cc6fe3", // purple
+  "#f5a3c7", // pink
+  "#70d7b2", // teal
+  "#ff8566", // coral
+  "#d5d8e0", // silver
+];
+
+const ACTIVE_TIMEOUT_MS = 5 * 60 * 1000; // session idle > 5min → inactive
 
 class SessionStore {
   constructor() {
@@ -50,6 +66,9 @@ class SessionStore {
     const at = Date.parse(ev.at) || Date.now();
 
     if (!s.sessionStartAt) s.sessionStartAt = at;
+
+    // Track per-session metadata (independent of aggregate state)
+    this.trackSession(ev, at);
 
     switch (ev.type) {
       case "session.start":
@@ -114,6 +133,46 @@ class SessionStore {
     }
 
     this.emit();
+  }
+
+  trackSession(ev, at) {
+    const sid = ev.session_id;
+    if (!sid) return;
+    const sessions = this.state.sessions;
+    let meta = sessions.get(sid);
+    if (!meta) {
+      const idx = sessions.size;
+      meta = {
+        id: sid,
+        color: SESSION_PALETTE[idx % SESSION_PALETTE.length],
+        firstSeen: at,
+        lastSeen: at,
+        active: true,
+        eventCount: 0,
+        lastPrompt: null,
+      };
+      sessions.set(sid, meta);
+    }
+    meta.lastSeen = at;
+    meta.eventCount += 1;
+    meta.active = true;
+    if (ev.type === "session.end") meta.active = false;
+    if (ev.type === "agent.dispatched" && ev.from === "buildcrew") {
+      meta.lastPrompt = ev.prompt ?? meta.lastPrompt;
+    }
+  }
+
+  sessionColor(sessionId) {
+    return this.state.sessions.get(sessionId)?.color ?? "#8a93a7";
+  }
+
+  allSessions() {
+    return [...this.state.sessions.values()].sort((a, b) => b.lastSeen - a.lastSeen);
+  }
+
+  activeSessions() {
+    const now = Date.now();
+    return this.allSessions().filter((s) => s.active && (now - s.lastSeen) < ACTIVE_TIMEOUT_MS);
   }
 
   // -------- derived values --------

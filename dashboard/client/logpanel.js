@@ -46,6 +46,7 @@ export function mountLogPanel() {
         <button class="lp-tab" data-mode="terminal">⌨ Terminal</button>
       </div>
       <div class="lp-controls">
+        <select id="lp-session-filter" title="filter by session"><option value="">all sessions</option></select>
         <select id="lp-agent-filter"><option value="">all agents</option></select>
         <select id="lp-type-filter">
           <option value="">all types</option>
@@ -64,14 +65,17 @@ export function mountLogPanel() {
   const metaEl = document.getElementById("lp-meta");
   const agentFilterEl = document.getElementById("lp-agent-filter");
   const typeFilterEl = document.getElementById("lp-type-filter");
+  const sessionFilterEl = document.getElementById("lp-session-filter");
   const clearBtn = document.getElementById("lp-clear");
 
   const state = {
     events: [],       // most recent first
     terminal: [],     // chronological (oldest first)
     agents: new Set(),
+    sessionIds: new Set(),
     agentFilter: "",
     typeFilter: "",
+    sessionFilter: "",
     mode: "events",   // "events" | "dialogue" | "terminal"
   };
 
@@ -103,6 +107,7 @@ export function mountLogPanel() {
         ev.type === "pipeline.stage" ||
         ev.type === "session.start" ||
         ev.type === "session.end")
+      .filter((ev) => !state.sessionFilter || ev.session_id === state.sessionFilter)
       .filter((ev) => !state.agentFilter || ev.agent === state.agentFilter || (ev.type === "agent.dispatched" && ev.from === state.agentFilter))
       .reverse(); // oldest first, like a chat log
 
@@ -200,6 +205,7 @@ export function mountLogPanel() {
   }
 
   function passesFilter(ev) {
+    if (state.sessionFilter && ev.session_id !== state.sessionFilter) return false;
     if (state.agentFilter && ev.agent !== state.agentFilter) return false;
     if (state.typeFilter === "agent" && !ev.type.startsWith("agent.")) return false;
     if (state.typeFilter === "file" && ev.type !== "file.written") return false;
@@ -214,16 +220,23 @@ export function mountLogPanel() {
     if (ev.type === "issue.found") {
       row.style.background = SEVERITY_BG[ev.severity] ?? "";
     }
+    // Session-color left border (3px) so multi-session streams are visually distinct
+    if (ev.session_id) {
+      row.style.borderLeft = `3px solid ${session.sessionColor(ev.session_id)}`;
+      row.style.paddingLeft = "11px";
+    }
 
     const ts = ev.at ? formatTime(ev.at) : "";
     const typeColor = TYPE_COLORS[ev.type] ?? "#c9a876";
     const summary = summarize(ev);
+    const shortSid = ev.session_id ? ev.session_id.slice(-6) : "";
 
     row.innerHTML = `
       <div class="lp-row-top">
         <span class="lp-ts">${escape(ts)}</span>
         <span class="lp-type" style="color:${typeColor}">${escape(ev.type)}</span>
         ${ev.agent ? `<span class="lp-agent">${escape(ev.agent)}</span>` : ""}
+        ${shortSid ? `<span class="lp-sid" style="color:${session.sessionColor(ev.session_id)}" title="session ${escape(ev.session_id)}">#${escape(shortSid)}</span>` : ""}
       </div>
       <div class="lp-row-body">${summary}</div>
     `;
@@ -352,6 +365,17 @@ export function mountLogPanel() {
       opt.textContent = ev.agent;
       agentFilterEl.appendChild(opt);
     }
+    if (ev.session_id && !state.sessionIds.has(ev.session_id)) {
+      state.sessionIds.add(ev.session_id);
+      const opt = document.createElement("option");
+      opt.value = ev.session_id;
+      const short = ev.session_id.slice(-6);
+      opt.textContent = `session #${short}`;
+      opt.style.color = session.sessionColor(ev.session_id);
+      sessionFilterEl.appendChild(opt);
+      // Notify statusbar badge
+      window.dispatchEvent(new CustomEvent("dashboard:sessions-changed"));
+    }
     // Skip DOM render while paused — event is still recorded in state.events,
     // so export captures it correctly.
     if (!isPaused()) render();
@@ -370,11 +394,25 @@ export function mountLogPanel() {
     state.typeFilter = e.target.value;
     render();
   });
+  sessionFilterEl.addEventListener("change", (e) => {
+    state.sessionFilter = e.target.value;
+    render();
+  });
   clearBtn.addEventListener("click", () => {
     state.agentFilter = "";
     state.typeFilter = "";
+    state.sessionFilter = "";
     agentFilterEl.value = "";
     typeFilterEl.value = "";
+    sessionFilterEl.value = "";
+    render();
+  });
+
+  // External trigger: statusbar badge can filter to a specific session
+  window.addEventListener("dashboard:select-session", (e) => {
+    const sid = e.detail?.sessionId ?? "";
+    state.sessionFilter = sid;
+    sessionFilterEl.value = sid;
     render();
   });
 

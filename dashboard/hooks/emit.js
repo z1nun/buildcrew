@@ -56,12 +56,19 @@ async function main() {
 }
 
 function toEvent(kind, data) {
+  // Every event carries session_id so the dashboard can disambiguate
+  // concurrent Claude Code sessions running in the same project.
+  const sessionId = data?.session_id ?? "unknown";
+
   switch (kind) {
     case "pre-agent": {
       const subagent = data?.tool_input?.subagent_type ?? "agent";
-      // Capture fuller prompt so the Dialogue view shows real conversation
       const prompt = truncate(data?.tool_input?.prompt ?? data?.tool_input?.description ?? "", 400);
-      return { type: "agent.dispatched", agent: subagent, from: "buildcrew", prompt };
+      return {
+        type: "agent.dispatched",
+        agent: subagent, from: "buildcrew", prompt,
+        session_id: sessionId,
+      };
     }
     case "post-agent": {
       const subagent = data?.tool_input?.subagent_type ?? "agent";
@@ -69,25 +76,32 @@ function toEvent(kind, data) {
       let summary = "";
       if (typeof resp === "string") summary = resp.slice(0, 500);
       else if (resp?.content?.[0]?.text) summary = String(resp.content[0].text).slice(0, 500);
-      return { type: "agent.completed", agent: subagent, output_summary: summary };
+      return {
+        type: "agent.completed",
+        agent: subagent, output_summary: summary,
+        session_id: sessionId,
+      };
     }
     case "file-written": {
       const path = data?.tool_input?.file_path;
       if (!path) return null;
-      // Best effort: attribute to last-known agent if available, else generic
-      return { type: "file.written", agent: data?.agent ?? "developer", path };
+      return {
+        type: "file.written",
+        agent: data?.agent ?? "developer", path,
+        session_id: sessionId,
+      };
     }
     case "user-prompt": {
       return {
         type: "session.start",
-        session_id: data?.session_id ?? `cc-${Date.now()}`,
+        session_id: sessionId === "unknown" ? `cc-${Date.now()}` : sessionId,
         mode: "feature",
       };
     }
     case "session-end": {
       return {
         type: "session.end",
-        session_id: data?.session_id ?? "unknown",
+        session_id: sessionId,
         outcome: "success",
       };
     }
