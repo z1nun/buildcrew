@@ -8,4 +8,12 @@ node_modules/
 .claude/buildcrew/
 .claude/settings.json
 .claude/settings.local.json
+.claude/agent-memory/
+.claude/agents/
+.claude/harness/
 .gstack/
+.bkit/runtime/
+.bkit/state/memory.json
+docs/01-plan/features/
+docs/02-design/features/
+docs/03-analysis/
