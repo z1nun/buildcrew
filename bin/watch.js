@@ -32,11 +32,23 @@ const c = NO_COLOR
       reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
       black: "\x1b[30m", red: "\x1b[31m", green: "\x1b[32m",
       gold:  "\x1b[33m", blue: "\x1b[34m", mag: "\x1b[35m",
-      cyan:  "\x1b[36m", gray: "\x1b[90m",
+      cyan:  "\x1b[36m",
+      // Primary secondary text — readable on dark terminals (was \x1b[90m which rendered too dim)
+      gray: "\x1b[38;5;250m",
+      // Muted — for truly tertiary metadata (timestamps, separators)
+      muted: "\x1b[38;5;244m",
       bgWood: "\x1b[48;5;94m",
     };
 
-const CLEAR = "\x1b[2J\x1b[H";
+// Anti-flicker rendering primitives.
+// HOME moves cursor to top-left WITHOUT clearing — we overwrite in place and
+// use CLR_EOL per line + CLR_BELOW at the end to erase leftovers. The old
+// `\x1b[2J\x1b[H` caused a visible flash every frame (blank → redraw).
+const HOME = "\x1b[H";
+const CLR_EOL = "\x1b[K";      // clear from cursor to end of line
+const CLR_BELOW = "\x1b[J";    // clear from cursor to end of screen
+const ALT_SCREEN_ON = "\x1b[?1049h";
+const ALT_SCREEN_OFF = "\x1b[?1049l";
 const HIDE_CURSOR = "\x1b[?25l";
 const SHOW_CURSOR = "\x1b[?25h";
 
@@ -148,12 +160,37 @@ function handleEvent(ev) {
 
   switch (ev.type) {
     case "session.start":
+      // New session → clear per-session state. Watch is a live observer for the
+      // current session; persistent project progress belongs in docs/ (PDCA).
+      // Keep: coherence (file-derived), session metadata itself.
+      state.currentStage = null;
+      state.completedStages = new Set();
+      state.activeAgents = new Map();
+      state.completedAgents = new Map();
+      state.events = 0;
+      state.files = 0;
+      state.issues = { critical: 0, high: 0, med: 0, low: 0 };
+      state.recent = [];
+      state.recentFiles = [];
+      state.recentIssues = [];
       state.sessionStartAt = at;
       state.sessionEndAt = null;
       if (ev.session_id) state.sessionId = ev.session_id;
       break;
     case "session.end":
       state.sessionEndAt = at;
+      // Sweep any agents still marked active — completed events can be missed
+      // (e.g. @mentions in prompt text that hook logs as dispatched but never
+      // actually invoke the Agent tool). Session end implies nothing is running.
+      for (const id of [...state.activeAgents.keys()]) {
+        const a = state.activeAgents.get(id);
+        state.activeAgents.delete(id);
+        state.completedAgents.set(id, {
+          lastAt: at,
+          duration: Math.max(0, at - a.startAt),
+          summary: "",
+        });
+      }
       break;
     case "agent.dispatched": {
       if (!ev.agent) break;
@@ -284,7 +321,7 @@ function renderNow(width) {
       const emoji = (AGENTS.find(a => a.id === id)?.emoji) ?? "●";
       const elapsed = formatDuration(Math.floor((now - info.startAt) / 1000));
       const prompt = truncate(info.prompt, Math.max(20, width - 28));
-      console.log(`  ${c.gold}●${c.reset} ${emoji} ${c.bold}${id}${c.reset} ${c.gray}${elapsed} · ${prompt}${c.reset}`);
+      console.log(`  ${c.gold}●${c.reset} ${emoji} ${c.bold}${id}${c.reset} ${c.muted}${elapsed} ·${c.reset} ${prompt}`);
     }
   }
   console.log("");
@@ -411,7 +448,7 @@ function formatEvent(ev, maxLen) {
   let body;
   switch (ev.type) {
     case "agent.dispatched":
-      body = `${c.gold}▶${c.reset} ${c.bold}${ev.agent ?? "?"}${c.reset} ${c.gray}· ${truncate(ev.prompt, 60)}${c.reset}`;
+      body = `${c.gold}▶${c.reset} ${c.bold}${ev.agent ?? "?"}${c.reset} ${c.muted}·${c.reset} ${truncate(ev.prompt, 60)}`;
       break;
     case "agent.completed":
       body = `${c.green}✓${c.reset} ${ev.agent ?? "*"} ${c.gray}done${c.reset}`;
@@ -439,16 +476,36 @@ function formatEvent(ev, maxLen) {
 
 function render() {
   const width = Math.max(60, process.stdout.columns ?? 80);
-  process.stdout.write(CLEAR);
-  renderHeader();
-  renderNow(width);
-  renderPipeline(width);
-  renderAgents(width);
-  renderFiles(width);
-  renderIssues(width);
-  renderCoherence(width);
-  renderRecent(width);
-  process.stdout.write(`\n${c.gray}q quit  ·  r show full coherence report${c.reset}\n`);
+
+  // Capture every render*() call's output into an in-memory buffer by
+  // monkey-patching console.log for the duration of the render. This lets us
+  // emit the whole frame in a single process.stdout.write — eliminating the
+  // per-line flicker that came from 30+ separate writes.
+  const lines = [];
+  const origLog = console.log;
+  console.log = (...args) => {
+    lines.push(args.length === 0 ? "" : args.map(String).join(" "));
+  };
+  try {
+    renderHeader();
+    renderNow(width);
+    renderPipeline(width);
+    renderAgents(width);
+    renderFiles(width);
+    renderIssues(width);
+    renderCoherence(width);
+    renderRecent(width);
+  } finally {
+    console.log = origLog;
+  }
+  lines.push("");
+  lines.push(`${c.gray}q quit  ·  r show full coherence report${c.reset}`);
+
+  // Single atomic frame: cursor home → each line + clear-to-EOL (erases any
+  // leftover chars from a previous longer line) → clear-below (handles frame
+  // shrinkage). No `\x1b[2J` flash.
+  const frame = HOME + lines.map(l => l + CLR_EOL).join("\n") + "\n" + CLR_BELOW;
+  process.stdout.write(frame);
 }
 
 // ------------------------------------------------------------------
@@ -520,10 +577,13 @@ function subscribeTail() {
 // ------------------------------------------------------------------
 // Bootstrap
 // ------------------------------------------------------------------
-process.stdout.write(HIDE_CURSOR);
-process.on("exit", () => process.stdout.write(SHOW_CURSOR));
-process.on("SIGINT", () => { process.stdout.write(SHOW_CURSOR); process.exit(0); });
-process.on("SIGTERM", () => { process.stdout.write(SHOW_CURSOR); process.exit(0); });
+// Enter alternate screen so the dashboard doesn't scribble over the user's
+// scrollback. On exit we return the terminal to its pre-watch state.
+process.stdout.write(ALT_SCREEN_ON + HIDE_CURSOR);
+const restoreTerm = () => process.stdout.write(SHOW_CURSOR + ALT_SCREEN_OFF);
+process.on("exit", restoreTerm);
+process.on("SIGINT", () => { restoreTerm(); process.exit(0); });
+process.on("SIGTERM", () => { restoreTerm(); process.exit(0); });
 
 // Keypress handlers: q/Ctrl-C quit, r open full coherence report
 if (process.stdin.isTTY) {
@@ -536,20 +596,19 @@ if (process.stdin.isTTY) {
     }
     if (key?.name === "r") {
       // Open the full coherence report. Hand off the terminal to setup.js's
-      // report subcommand which uses `less -R` for paging. Restore TTY state
-      // after the child exits.
-      process.stdout.write(SHOW_CURSOR);
+      // report subcommand which uses `less -R` for paging. Leave the alt
+      // screen so less paints on the main buffer; re-enter on return.
+      process.stdout.write(SHOW_CURSOR + ALT_SCREEN_OFF);
       process.stdin.setRawMode(false);
-      process.stdout.write(CLEAR);
       const setupEntry = resolve(__dirname, "setup.js");
       spawnSync(process.execPath, [setupEntry, "report"], {
         stdio: "inherit",
         cwd: process.cwd(),
         env: process.env,
       });
-      // Restore raw mode + hide cursor + redraw
+      // Restore raw mode + alt screen + hide cursor + redraw
       process.stdin.setRawMode(true);
-      process.stdout.write(HIDE_CURSOR);
+      process.stdout.write(ALT_SCREEN_ON + HIDE_CURSOR);
       scheduleRender();
     }
   });
