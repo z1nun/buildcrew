@@ -11,9 +11,13 @@
  * Exit with q or Ctrl-C.
  */
 
-import { createReadStream, watchFile, statSync, existsSync, mkdirSync, closeSync, openSync } from "node:fs";
-import { join } from "node:path";
+import { createReadStream, watchFile, statSync, existsSync, mkdirSync, closeSync, openSync, readdirSync, readFileSync } from "node:fs";
+import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import readline, { createInterface } from "node:readline";
+import { spawnSync } from "node:child_process";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const EVENTS_PATH = process.env.BUILDCREW_EVENTS_PATH
   ?? join(process.cwd(), ".claude", "buildcrew", "events.jsonl");
@@ -88,7 +92,53 @@ const state = {
   sessionId: null,
   sessionStartAt: null,
   sessionEndAt: null,
+  // Coherence: loaded from .claude/pipeline/*/coherence-report.md after coherence-auditor runs
+  coherence: null,             // { score, status, feature, gaps, fabrications, edgesActual, edgesPossible, path, ts }
 };
+
+// ------------------------------------------------------------------
+// Coherence report loader — reads .claude/pipeline/{feature}/coherence-report.md
+// Triggered on agent.completed(coherence-auditor) or file.written(*/coherence-report.md)
+// ------------------------------------------------------------------
+function loadLatestCoherence() {
+  try {
+    const pipelineDir = join(process.cwd(), ".claude", "pipeline");
+    if (!existsSync(pipelineDir)) return;
+    const features = readdirSync(pipelineDir, { withFileTypes: true }).filter(d => d.isDirectory());
+    let newest = null;
+    for (const f of features) {
+      const p = join(pipelineDir, f.name, "coherence-report.md");
+      if (!existsSync(p)) continue;
+      const s = statSync(p);
+      if (!newest || s.mtimeMs > newest.mtime) {
+        newest = { path: p, feature: f.name, mtime: s.mtimeMs };
+      }
+    }
+    if (!newest) return;
+    const content = readFileSync(newest.path, "utf8");
+    // Tolerant parsing — coherence-auditor writes Korean or English.
+    const score = parseInt(content.match(/Coordination Score\*?\*?:?\s*\*?\*?(\d+)\s*%/)?.[1] ?? "", 10);
+    const edges = content.match(/\((\d+)\s*\/\s*(\d+)\s+edges?\)/);
+    const status = content.match(/Status:\s*([A-Za-z]+)/)?.[1] ?? "";
+    const fabrications = parseInt(content.match(/Fabrications?:\s*\*?\*?(\d+)/)?.[1] ?? "0", 10);
+    // Gap count from "## Gaps (N)" heading
+    const gaps = parseInt(content.match(/##\s*Gaps?\s*\((\d+)\)/)?.[1] ?? "0", 10);
+    state.coherence = {
+      score: Number.isFinite(score) ? score : null,
+      status,
+      feature: newest.feature,
+      gaps,
+      fabrications,
+      edgesActual: edges ? parseInt(edges[1], 10) : null,
+      edgesPossible: edges ? parseInt(edges[2], 10) : null,
+      path: newest.path,
+      ts: newest.mtime,
+    };
+    scheduleRender();
+  } catch {
+    // Swallow — coherence is best-effort, never crashes the watch
+  }
+}
 
 function handleEvent(ev) {
   state.events += 1;
@@ -130,10 +180,18 @@ function handleEvent(ev) {
       };
       if (ev.agent) closeAgent(ev.agent, at);
       else if (ev.sweep) for (const id of [...state.activeAgents.keys()]) closeAgent(id, at);
+      // Coherence: when coherence-auditor finishes, reload the latest report
+      if (ev.agent === "coherence-auditor") {
+        loadLatestCoherence();
+      }
       break;
     }
     case "file.written":
       state.files += 1;
+      // Coherence: if a coherence-report.md was just written, reload
+      if (ev.path && ev.path.endsWith("/coherence-report.md")) {
+        loadLatestCoherence();
+      }
       if (ev.path) {
         state.recentFiles.push({ path: ev.path, tool: ev.tool_name, agent: ev.agent, at });
         if (state.recentFiles.length > 6) state.recentFiles.shift();
@@ -299,6 +357,40 @@ function renderIssues(width) {
   console.log("");
 }
 
+function renderCoherence(width) {
+  if (!state.coherence) return;
+  const co = state.coherence;
+  console.log(sectionTitle("COHERENCE", width));
+  // Score color: 90+ green, 70-89 cyan, 50-69 gold, <50 red
+  let scoreColor = c.gray, statusEmoji = "○";
+  if (co.score == null) {
+    scoreColor = c.gray;
+    statusEmoji = "?";
+  } else if (co.score >= 90) {
+    scoreColor = c.green; statusEmoji = "✓";
+  } else if (co.score >= 70) {
+    scoreColor = c.cyan; statusEmoji = "●";
+  } else if (co.score >= 50) {
+    scoreColor = c.gold; statusEmoji = "⚠";
+  } else {
+    scoreColor = c.red; statusEmoji = "✗";
+  }
+  const scoreStr = co.score == null ? `${c.gray}—${c.reset}` : `${scoreColor}${c.bold}${co.score}%${c.reset}`;
+  const statusStr = co.status ? `${scoreColor}${co.status}${c.reset}` : `${c.gray}—${c.reset}`;
+  const edgesStr = (co.edgesActual != null && co.edgesPossible != null)
+    ? `${c.gray}(${co.edgesActual}/${co.edgesPossible} edges)${c.reset}`
+    : "";
+  const fabBadge = co.fabrications > 0
+    ? `  ${c.red}🚨 ${co.fabrications} fabrication${co.fabrications > 1 ? "s" : ""}${c.reset}`
+    : "";
+  const gapBadge = co.gaps > 0
+    ? `  ${c.gold}⚠ ${co.gaps} gap${co.gaps > 1 ? "s" : ""}${c.reset}`
+    : `  ${c.gray}no gaps${c.reset}`;
+  console.log(`  ${statusEmoji} ${scoreStr} ${statusStr} ${edgesStr}${gapBadge}${fabBadge}`);
+  console.log(`  ${c.gray}feature ${c.cyan}${co.feature}${c.reset}  ${c.gray}· press ${c.bold}r${c.reset}${c.gray} for full report${c.reset}`);
+  console.log("");
+}
+
 function renderRecent(width) {
   console.log(sectionTitle("LOG", width));
   if (state.recent.length === 0) {
@@ -354,8 +446,9 @@ function render() {
   renderAgents(width);
   renderFiles(width);
   renderIssues(width);
+  renderCoherence(width);
   renderRecent(width);
-  process.stdout.write(`\n${c.gray}q / Ctrl-C to exit${c.reset}\n`);
+  process.stdout.write(`\n${c.gray}q quit  ·  r show full coherence report${c.reset}\n`);
 }
 
 // ------------------------------------------------------------------
@@ -379,6 +472,13 @@ async function replayExisting() {
     tailOffset = st.size;
   } catch {
     tailOffset = 0;
+    return;
+  }
+  // Empty events.jsonl (first run / fresh install) — nothing to replay.
+  // createReadStream with end: -1 would throw RangeError.
+  if (tailOffset === 0) {
+    state.connected = true;
+    scheduleRender();
     return;
   }
   const stream = createReadStream(EVENTS_PATH, { encoding: "utf8", end: tailOffset - 1 });
@@ -425,7 +525,7 @@ process.on("exit", () => process.stdout.write(SHOW_CURSOR));
 process.on("SIGINT", () => { process.stdout.write(SHOW_CURSOR); process.exit(0); });
 process.on("SIGTERM", () => { process.stdout.write(SHOW_CURSOR); process.exit(0); });
 
-// Allow 'q' to quit
+// Keypress handlers: q/Ctrl-C quit, r open full coherence report
 if (process.stdin.isTTY) {
   readline.emitKeypressEvents(process.stdin);
   process.stdin.setRawMode(true);
@@ -433,6 +533,24 @@ if (process.stdin.isTTY) {
     if (key?.name === "q" || (key?.ctrl && key?.name === "c")) {
       process.stdout.write(SHOW_CURSOR);
       process.exit(0);
+    }
+    if (key?.name === "r") {
+      // Open the full coherence report. Hand off the terminal to setup.js's
+      // report subcommand which uses `less -R` for paging. Restore TTY state
+      // after the child exits.
+      process.stdout.write(SHOW_CURSOR);
+      process.stdin.setRawMode(false);
+      process.stdout.write(CLEAR);
+      const setupEntry = resolve(__dirname, "setup.js");
+      spawnSync(process.execPath, [setupEntry, "report"], {
+        stdio: "inherit",
+        cwd: process.cwd(),
+        env: process.env,
+      });
+      // Restore raw mode + hide cursor + redraw
+      process.stdin.setRawMode(true);
+      process.stdout.write(HIDE_CURSOR);
+      scheduleRender();
     }
   });
 }
@@ -444,6 +562,9 @@ setInterval(scheduleRender, 1000);
 (async () => {
   await ensureEventsFile();
   await replayExisting();
+  // Surface the latest coherence report (if any) on startup, even before any
+  // new events fire — so users see their last score when they open watch.
+  loadLatestCoherence();
   subscribeTail();
   render();
 })();
