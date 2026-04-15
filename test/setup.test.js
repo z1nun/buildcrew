@@ -11,8 +11,8 @@ const PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8
 const agentFiles = readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
 
 describe('agent files', () => {
-  it('has 17 agent files (15 specialists + buildcrew orchestrator + coherence-auditor meta)', () => {
-    expect(agentFiles).toHaveLength(17);
+  it('has 19 agent files (15 specialists + buildcrew orchestrator + coherence-auditor + plan/spec challengers)', () => {
+    expect(agentFiles).toHaveLength(19);
   });
 
   it('all agents have valid YAML frontmatter', () => {
@@ -161,8 +161,8 @@ describe('templates', () => {
 });
 
 describe('package.json', () => {
-  it('description mentions 15 agents', () => {
-    expect(PKG.description).toContain('15');
+  it('description mentions 17 agents', () => {
+    expect(PKG.description).toContain('17');
   });
 
   it('has no runtime dependencies', () => {

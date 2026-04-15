@@ -1,5 +1,78 @@
 # Changelog
 
+## v1.10.0
+
+Adversarial challengers at plan and spec boundaries. Two new agents — `plan-challenger` and `spec-challenger` — run between existing pipeline stages and attack the upstream artifact before downstream agents commit. Catches wrong premises and under-specified designs while they're still cheap to fix, instead of letting errors compound through design → dev → QA.
+
+### Why
+
+The existing pipeline's only cross-checks ran at the end: `qa-auditor` audited final diffs, `coherence-auditor` verified handoff consistency. Both catch problems *after* the team has spent tokens building on a flawed foundation. A wrong plan produces a wrong design produces wrong code produces wrong tests — by the time the auditors flag it, the cost is sunk.
+
+The two challengers run at **phase boundaries** instead of the end. They're asymmetric: the planner/designer was paid to make the artifact look solid; the challenger is paid to find where it genuinely isn't, and either clear it for the next agent or send it back with a structured critique.
+
+### Added: `plan-challenger`
+
+- Runs AFTER `planner` emits `01-plan.md`, BEFORE `designer` starts.
+- Attacks the plan across 6 vectors: **Premise** (demand evidence, specific user, opportunity cost), **Scope** (cut-50% test, hidden creep), **Alternatives** (≥2 compared + build-vs-buy + do-nothing), **Risks** (load-bearing assumptions, failure modes, reversibility), **Acceptance Criteria** (binary pass/fail, observable, negative cases), **Metrics** (measurable, causal, baseline, timeframe).
+- Every finding cites a specific anchor in `01-plan.md` with evidence from harness, git log, existing code, or web search.
+- Severity triage: 🔴 BLOCKING / 🟡 NIT / 🔵 FYI. Conservative rule: uncertain → NIT.
+- **Verdict rules (exact):** ≥3 BLOCKING findings in Vector 1 (Premise) → REJECT (escalate to user). ≥1 BLOCKING anywhere else → REVISE (back to planner). 0 BLOCKING → APPROVED (proceed to designer).
+- Writes to `.claude/pipeline/{feature}/01.5-plan-critique.md` with full Handoff Record.
+- Model: opus. Adversarial reasoning depth > speed.
+
+### Added: `spec-challenger`
+
+- Runs AFTER `designer` emits `02-design.md`, BEFORE `developer` starts.
+- Attacks the **spec document**, not rendered UI (`design-reviewer` continues to handle rendered UI post-dev — the roles don't overlap).
+- Attacks across 8 vectors: **Plan Alignment** (acceptance criteria → spec element mapping matrix), **State Coverage** (default/loading/error/empty/success/hover/focus/disabled/first-time/offline), **Edge Cases** (tiny/huge screens, slow network, concurrent edits, long text, RTL, reduced motion), **Data Flow** (input source, update trigger, optimistic vs pessimistic, cache strategy), **Failure Modes** (network failure, auth expired, permission denied, race conditions), **Accessibility** (keyboard, focus management, screen reader, contrast, live regions, touch targets), **Motion Spec** (per-component map, named durations/easings, reduced-motion fallback), **Developer Contract** (props, handlers, side effects, file structure, testing hooks).
+- Produces a **Plan Alignment Matrix** (every plan acceptance criterion → spec coverage status) and a **State Coverage Matrix** (every component × every required state) as required sections — quickest way to surface the biggest gap class.
+- **Verdict rules:** ≥3 BLOCKING in Vector 1 (Plan Alignment) → REJECT (spec doesn't fulfill plan — designer redo). ≥1 BLOCKING anywhere → REVISE. 0 BLOCKING → APPROVED.
+- Writes to `.claude/pipeline/{feature}/02.5-spec-critique.md`.
+- Model: opus.
+
+### Changed: Mode 1 pipeline
+
+```
+planner → plan-challenger → (revise loop, max 2) → designer → spec-challenger → (revise loop, max 2) → developer → qa-tester → browser-qa → reviewer → coherence-auditor
+```
+
+- Each challenger's **revise loop** caps at 2 cycles. 3rd consecutive REVISE verdict escalates to the user (planner + challenger are deadlocked on a judgment call the user must arbitrate).
+- Any REJECT verdict halts the pipeline immediately and presents the critique to the user. No auto-fix on REJECT — the premise or plan-fidelity break needs human direction.
+- `spec-challenger` is skipped when `designer` is skipped (non-UI feature).
+- `coherence-auditor` still runs exactly once at the very end of all outer iterations.
+
+### Changed: `buildcrew` orchestrator
+
+- Team Members table gained an **Adversarial** row with both challengers.
+- Enforcement rules #2 (don't skip challengers) and #6 (verdict-driven flow) added; existing rules renumbered.
+- Pre-ship checklist now requires `01.5-plan-critique.md` and (if UI) `02.5-spec-critique.md` with APPROVED verdict before declaring done.
+- **Revise-loop input protocol**: when planner/designer re-run after REVISE, their new Handoff Record MUST cite the critique file's `revision-request` anchor in `Inputs consumed` — this lets `coherence-auditor` verify the revise loop actually happened, not just got logged.
+- Crew report now shows per-challenger verdict and revise-cycle count.
+
+### Changed: `coherence-auditor`
+
+- Expected pipeline files list includes `01.5-plan-critique.md` and `02.5-spec-critique.md`.
+- Added specific edge-case guidance for REVISE / REJECT halts — if a challenger rejected, the auditor reports only what exists and notes the halt in its Verdict.
+
+### Changed: other
+
+- `bin/setup.js`: banner text "15 AI agents" → "17 AI agents".
+- `package.json`: version 1.9.2 → 1.10.0, description updated to mention adversarial challengers.
+- Tests: `setup.test.js` agent count 17 → 19 (15 specialists + buildcrew + coherence-auditor + 2 challengers), description match "15" → "17". `handoff-record.test.js`: challengers added to `PRODUCING_AGENTS`, rule-number regex made position-independent since Handoff Record rule moved from #6 to #8 with new inserts.
+
+### Upgrading
+
+Existing projects: `npx buildcrew@latest setup` to install `plan-challenger.md` and `spec-challenger.md` into `.claude/agents/`. No config changes needed — the orchestrator picks them up automatically. Existing in-flight pipelines will start using the challengers from the next `@buildcrew` invocation.
+
+If you have a pipeline currently mid-iteration without challenger critique files, `coherence-auditor` will not flag their absence (they're optional expected files, not required). Future iterations will include them.
+
+### Design notes
+
+- **Why opus, not sonnet.** Adversarial reasoning over structured docs needs depth. A sonnet challenger will produce surface-level critique ("consider more edge cases" without specifics). Opus reliably produces cited, actionable findings.
+- **Why not merge with existing reviewers.** `reviewer` (post-dev code review), `design-reviewer` (post-dev UI review), `qa-auditor` (post-dev diff audit), `coherence-auditor` (final handoff consistency) all run AFTER developer. Challengers are structurally different: pre-dev, on documents, with revise loops. Merging would destroy the asymmetry that makes each role sharp.
+- **Why "challenger" not "reviewer" or "critic".** Reviewer/critic imply final judgment. Challenger implies adversarial sparring in service of a better plan — the verdict has a revise path, not just pass/fail.
+- **Why REJECT is separate from REVISE.** REVISE means the artifact is fixable within the upstream agent's mandate. REJECT means the problem is upstream of the upstream agent (bad premise, plan doesn't match intent) and needs human arbitration.
+
 ## v1.9.2
 
 Quality-of-life patch — fixes two papercuts that made `buildcrew watch` and the hook pipeline unreliable on consumer projects.

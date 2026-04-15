@@ -38,7 +38,7 @@ npx buildcrew
 ```
 
 The interactive setup will:
-1. Install 15 agents + orchestrator
+1. Install 17 agents + orchestrator
 2. Ask to install Playwright MCP (required for browser testing)
 3. Ask to generate project harness (auto-detects your stack)
 4. Let you pick additional harness templates
@@ -60,6 +60,15 @@ Then start working:
 | **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Plans scored 1-10 per lens. |
 | **designer** | opus | UI/UX research + motion engineering. Playwright screenshots, Figma MCP, production components with animations. AI slop blacklist. |
 | **developer** | opus | 6 Implementation Questions + 3-Lens Self-Review (Architecture, Code Quality, Safety). Error Handling Protocol. 3 modes: feature, bugfix, iteration. |
+
+### Adversarial Team
+
+Runs between pipeline stages to catch errors *before* downstream agents commit. Produces structured critique with APPROVED / REVISE / REJECT verdict and a revise loop.
+
+| Agent | Model | Role |
+|-------|-------|------|
+| **plan-challenger** | opus | Attacks `01-plan.md` across 6 vectors (premise, scope, alternatives, risks, acceptance criteria, metrics). Runs AFTER planner, BEFORE designer. Writes `01.5-plan-critique.md`. |
+| **spec-challenger** | opus | Attacks `02-design.md` document (not rendered UI) across 8 vectors (plan alignment, state coverage, edge cases, data flow, failure modes, accessibility, motion spec, developer contract). Runs AFTER designer, BEFORE developer. Writes `02.5-spec-critique.md`. |
 
 ### Quality Team
 
@@ -101,7 +110,7 @@ Talk to `@buildcrew` naturally. It auto-detects the mode.
 
 | Mode | Example | Pipeline |
 |------|---------|----------|
-| **Feature** | "Add user dashboard" | Plan → Design → Dev → QA → Browser QA → Review |
+| **Feature** | "Add user dashboard" | Plan → Plan-Challenger → Design → Spec-Challenger → Dev → QA → Browser QA → Review → Coherence |
 | **Project Audit** | "full project audit" | Scan → Prioritize → Fix → Verify (loop) |
 | **Browser QA** | "browser qa localhost:3000" | Playwright testing + health score |
 | **Security** | "security audit" | OWASP + STRIDE + secrets + deps |
@@ -137,9 +146,41 @@ Each iteration runs the **full end-to-end pipeline**:
 
 ---
 
+## Adversarial Challengers
+
+Between the existing pipeline stages, two challenger agents attack the upstream artifact before downstream agents commit. A wrong plan poisons everything downstream — `plan-challenger` catches plan errors while they're still cheap. A thin spec forces developers to invent critical details — `spec-challenger` catches spec gaps before developer writes a line.
+
+### The revise loop
+
+```
+planner → plan-challenger ─┬─ APPROVED → designer
+                           ├─ REVISE  → planner re-runs (max 2 cycles)
+                           └─ REJECT  → escalate to user
+
+designer → spec-challenger ─┬─ APPROVED → developer
+                            ├─ REVISE  → designer re-runs (max 2 cycles)
+                            └─ REJECT  → escalate to user
+```
+
+- **APPROVED**: 0 blocking findings. Proceed.
+- **REVISE**: ≥1 blocking finding but premise is intact. Upstream agent re-runs with critique file as an input, must address every blocking item (nits optional). Max 2 revise cycles; 3rd deadlock escalates to user.
+- **REJECT**: premise-level crack (≥3 blocking in Vector 1). Pipeline halts immediately and presents the critique — no auto-fix, human direction needed.
+
+### Attack vectors
+
+**`plan-challenger` (6 vectors):** Premise (demand evidence, specific user, opportunity cost) · Scope (cut-50% test, hidden creep) · Alternatives (≥2 compared + build-vs-buy + do-nothing) · Risks (load-bearing assumptions, failure modes, reversibility) · Acceptance Criteria (binary pass/fail, observable, negative cases) · Metrics (measurable, causal, baseline, timeframe).
+
+**`spec-challenger` (8 vectors):** Plan Alignment (matrix of every plan criterion → spec coverage) · State Coverage (matrix of every component × required states) · Edge Cases (tiny/huge screens, slow network, concurrent edits, long text, RTL, reduced motion) · Data Flow (input source, optimistic vs pessimistic, cache) · Failure Modes (network/auth/permission/race) · Accessibility (keyboard, focus, screen reader, contrast, live regions, touch targets) · Motion Spec (per-component map, named durations/easings, reduced-motion fallback) · Developer Contract (props, handlers, side effects, file structure, testing hooks).
+
+### Why not merge with existing reviewers
+
+`reviewer` (post-dev code review), `design-reviewer` (post-dev rendered UI review), `qa-auditor` (post-dev diff audit), and `coherence-auditor` (final handoff consistency) all run AFTER developer. Challengers are structurally different: pre-dev, on documents, with revise loops. Merging would destroy the asymmetry that makes each role sharp.
+
+---
+
 ## Verifiable Coordination
 
-How do you know the 15 agents actually worked as a team, instead of running in sequence and pretending to collaborate?
+How do you know the 17 agents actually worked as a team, instead of running in sequence and pretending to collaborate?
 
 buildcrew answers this with **Coordination Score** — a 0-100% measurement output at the end of every Feature run.
 
@@ -161,11 +202,17 @@ buildcrew answers this with **Coordination Score** — a 0-100% measurement outp
 ```
 📊 buildcrew Report
 ─────────────────────────────
-✅ Agents: planner, designer, developer, qa-tester, reviewer, coherence-auditor
-🔄 Iterations: 2/3
+✅ Agents: planner, plan-challenger, designer, spec-challenger,
+          developer, qa-tester, reviewer, coherence-auditor
+🔄 Outer iterations: 2/3
+🎯 Challenger verdicts:
+   plan-challenger : APPROVED (0 blocking, 2 nits) after 1 revise cycle
+   spec-challenger : APPROVED (0 blocking, 3 nits) on first pass
 🎯 Coordination Score: 82% — Normal (9/11 edges, 0 fabrications, 2 gaps)
 📁 Output: .claude/pipeline/{feature-name}/
-   └── coherence-report.md (full coordination analysis)
+   ├── 01-plan.md             ├── 02-design.md
+   ├── 01.5-plan-critique.md  ├── 02.5-spec-critique.md
+   └── coherence-report.md
 ─────────────────────────────
 ```
 
@@ -176,7 +223,7 @@ buildcrew answers this with **Coordination Score** — a 0-100% measurement outp
 | 90-100 | Healthy | Real team collaboration |
 | 70-89 | Normal | Minor gaps, ship-ready |
 | 50-69 | Suspicious | Coordination has holes — review the design |
-| 0-49 | Theater | ⚠️ This is not a team — it's 15 independent scripts |
+| 0-49 | Theater | ⚠️ This is not a team — it's 17 independent scripts |
 
 ### What gets caught
 
@@ -233,7 +280,7 @@ npx buildcrew add         # List available templates
 
 ## Dashboard
 
-Real-time observability for buildcrew sessions. A pixel-art office visualization where your 15 agents come alive — walking between rooms, filing issues, and progressing through the pipeline — all powered by Claude Code hooks and zero external dependencies.
+Real-time observability for buildcrew sessions. A pixel-art office visualization where your 17 agents come alive — walking between rooms, filing issues, and progressing through the pipeline — all powered by Claude Code hooks and zero external dependencies.
 
 ### Quick Start
 
@@ -314,13 +361,16 @@ Each feature generates a full document chain:
 
 ```
 .claude/pipeline/{feature}/
-├── 01-plan.md           Requirements + 4-lens review scores
-├── 02-design.md         Design decisions + component specs
-├── 03-dev-notes.md      Implementation + 6-question analysis + self-review
-├── 04-qa-report.md      Test map + acceptance criteria verification
-├── 05-browser-qa.md     Health score + screenshots + flows
-├── 06-review.md         4-specialist findings + auto-fixes
-└── 07-ship.md           PR URL + release notes
+├── 01-plan.md              Requirements + 4-lens review scores
+├── 01.5-plan-critique.md   plan-challenger verdict + 6-vector findings
+├── 02-design.md            Design decisions + component specs
+├── 02.5-spec-critique.md   spec-challenger verdict + 8-vector findings + matrices
+├── 03-dev-notes.md         Implementation + 6-question analysis + self-review
+├── 04-qa-report.md         Test map + acceptance criteria verification
+├── 05-browser-qa.md        Health score + screenshots + flows
+├── 06-review.md            4-specialist findings + auto-fixes
+├── 07-ship.md              PR URL + release notes
+└── coherence-report.md     Coordination Score + gaps + fabrications + orphans
 ```
 
 ---
@@ -358,12 +408,14 @@ Each feature generates a full document chain:
     ├─ enforces quality gates + iteration
     └─ offers second opinion after completion
          │
-         ├── Think:     thinker → architect
-         ├── Build:     planner → designer → developer
-         ├── Quality:   qa-tester → browser-qa → reviewer
-         ├── Sec/Ops:   security-auditor, canary-monitor, shipper
-         ├── Review:    architect, design-reviewer, qa-auditor
-         └── Debug:     investigator
+         ├── Think:        thinker → architect
+         ├── Build:        planner → designer → developer
+         ├── Adversarial:  plan-challenger, spec-challenger  (phase-boundary critics)
+         ├── Quality:      qa-tester → browser-qa → reviewer
+         ├── Sec/Ops:      security-auditor, canary-monitor, shipper
+         ├── Review:       architect, design-reviewer, qa-auditor
+         ├── Meta:         coherence-auditor  (final handoff audit)
+         └── Debug:        investigator
 ```
 
 ### Version Auto-Update

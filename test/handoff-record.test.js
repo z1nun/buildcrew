@@ -18,7 +18,9 @@ const AGENTS_DIR = join(__dirname, '..', 'agents');
 
 const PRODUCING_AGENTS = [
   'planner',
+  'plan-challenger',
   'designer',
+  'spec-challenger',
   'developer',
   'qa-tester',
   'browser-qa',
@@ -111,8 +113,8 @@ describe('buildcrew orchestrator enforces Handoff Record', () => {
 
   it('has enforcement rule about Handoff Record', () => {
     expect(content).toContain('Handoff Record');
-    // Rule 6 specifically
-    expect(content).toMatch(/6\.\s+\*\*[^*]*Handoff Record/);
+    // Some numbered rule must mention Handoff Record (position flexible across versions)
+    expect(content).toMatch(/\d+\.\s+\*\*[^*]*Handoff Record/);
   });
 
   it('📊 buildcrew Report includes Coordination Score line', () => {

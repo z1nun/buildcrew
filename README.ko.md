@@ -2,7 +2,7 @@
 
 > [English](README.md) | **한국어** | [문서](https://buildcrew-landing.vercel.app)
 
-Claude Code를 위한 15개 AI 에이전트 팀. 생각부터 배포까지 전체 개발 라이프사이클을 자동으로 진행합니다.
+Claude Code를 위한 17개 AI 에이전트 팀. 생각부터 배포까지 전체 개발 라이프사이클을 자동으로 진행합니다.
 
 ```bash
 npx buildcrew
@@ -14,7 +14,7 @@ npx buildcrew
 
 AI 코딩 에이전트가 아무리 똑똑해도, 구조 없이 쓰면 결과가 들쑥날쑥합니다. buildcrew는 Claude Code에 **팀**, **프로세스**, **컨텍스트**를 제공합니다.
 
-- **팀** — 역할이 명확한 15개 전문 에이전트 (7 opus + 8 sonnet)
+- **팀** — 역할이 명확한 17개 전문 에이전트 (9 opus + 8 sonnet)
 - **프로세스** — 품질 게이트가 있는 순차 파이프라인. 통과 못하면 자동으로 재시도
 - **하네스** — 코드베이스를 분석해서 프로젝트 맥락을 자동으로 파악
 - **오케스트레이터** — `@buildcrew`에게 말하면 알아서 적절한 에이전트를 투입
@@ -38,7 +38,7 @@ npx buildcrew
 ```
 
 인터랙티브 셋업이 순서대로 진행합니다:
-1. 15개 에이전트 + 오케스트레이터 설치
+1. 17개 에이전트 + 오케스트레이터 설치
 2. Playwright MCP 설치 여부 (브라우저 테스트에 필요)
 3. 프로젝트 하네스 생성 여부 (스택 자동 감지)
 4. 추가 하네스 템플릿 선택
@@ -60,6 +60,15 @@ npx buildcrew
 | **planner** | opus | 6가지 강제 질문으로 요구사항 분석. 4관점 자체 리뷰 (CEO, 엔지니어링, 디자인, QA). 관점별 1-10점 채점. |
 | **designer** | opus | UI/UX 레퍼런스 리서치 + 모션 엔지니어링. Playwright 스크린샷, Figma MCP, 프로덕션 컴포넌트 생성. |
 | **developer** | opus | 6가지 구현 질문으로 코드베이스 파악 후 구현. 3관점 자체 리뷰 (아키텍처, 품질, 안전성). 에러 핸들링 프로토콜 내장. |
+
+### 적대적 팀 (Challenger)
+
+파이프라인 각 단계 사이에 끼어들어 상위 산출물을 공격합니다. 하위 에이전트가 작업을 시작하기 전에 기획/설계의 오류를 잡아내는 "두 번째 의견" 역할. APPROVED / REVISE / REJECT 판정을 내리고 REVISE는 상위 에이전트 재실행(최대 2회)을 트리거합니다.
+
+| 에이전트 | 모델 | 역할 |
+|---------|------|------|
+| **plan-challenger** | opus | `01-plan.md`를 6가지 벡터로 공격 (전제, 스코프, 대안, 리스크, 인수 기준, 성공 지표). planner 후, designer 전 실행. `01.5-plan-critique.md` 출력. |
+| **spec-challenger** | opus | `02-design.md` **문서**를 8가지 벡터로 공격 (플랜 정합성, 상태 커버리지, 엣지 케이스, 데이터 흐름, 실패 모드, 접근성, 모션 스펙, 개발자 계약). 렌더된 UI는 아님 — 그건 `design-reviewer`가 담당. designer 후, developer 전 실행. `02.5-spec-critique.md` 출력. |
 
 ### 품질 팀
 
@@ -101,7 +110,7 @@ npx buildcrew
 
 | 모드 | 예시 | 파이프라인 |
 |------|------|----------|
-| **Feature** | "유저 대시보드 추가해줘" | 기획 → 디자인 → 개발 → QA → 브라우저 QA → 리뷰 |
+| **Feature** | "유저 대시보드 추가해줘" | 기획 → plan-challenger → 디자인 → spec-challenger → 개발 → QA → 브라우저 QA → 리뷰 → coherence 감사 |
 | **Project Audit** | "프로젝트 전체 점검해줘" | 스캔 → 우선순위 → 수정 → 검증 (반복) |
 | **Browser QA** | "브라우저 테스트해줘" | Playwright 테스트 + 건강 점수 |
 | **Security** | "보안 점검해줘" | OWASP + STRIDE + 시크릿 + 의존성 |

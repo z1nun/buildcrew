@@ -43,11 +43,17 @@ Orchestrator will tell you the feature name. Work directory: `.claude/pipeline/{
 
 Expected files (not all always present):
 - `01-plan.md` (planner)
+- `01.5-plan-critique.md` (plan-challenger) — critique of 01-plan.md with verdict APPROVED/REVISE/REJECT
 - `02-design.md` (designer, if UI)
+- `02.5-spec-critique.md` (spec-challenger, if designer ran) — critique of 02-design.md
 - `03-impl.md` (developer)
 - `04-qa.md` (qa-tester)
 - `05-browser-qa.md` (browser-qa, if UI)
 - `06-review.md` (reviewer)
+
+**Challenger-specific edge cases:**
+- If plan-challenger verdict was REVISE, planner re-ran and its re-issued Handoff Record should cite `01.5-plan-critique.md#revision-request` as an Input. If it doesn't, that's a gap worth calling out.
+- If either challenger verdict was REJECT, pipeline likely stopped early — report only what exists, note the halt in Verdict section.
 
 Additional files if referenced by any Output: harness files, source files under `src/`, `lib/`, etc.
 

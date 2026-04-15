@@ -1,7 +1,7 @@
 {
   "name": "buildcrew",
-  "version": "1.9.2",
-  "description": "15 AI agents for Claude Code — full development lifecycle from product thinking to production monitoring",
+  "version": "1.10.0",
+  "description": "17 AI agents for Claude Code — full development lifecycle with adversarial challengers at plan and spec boundaries",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",
   "license": "MIT",
