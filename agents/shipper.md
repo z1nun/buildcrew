@@ -283,6 +283,29 @@ Write to `.claude/pipeline/{feature-name}/07-ship.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Pre-flight: type/lint/build → all pass
+- `06-review.md#verdict` → APPROVE confirmed
+- `coherence-report.md#verdict` → reviewed (if available)
+- Git diff vs. main → semver determined
+
+### Outputs for next agents
+- PR URL → user
+- Suggested next: canary-monitor
+
+### Decisions NOT covered by inputs
+- semver bump rationale: {MAJOR/MINOR/PATCH}. Reason: {breaking? new? fix?}
+
+### Coordination signals (optional)
+```
+
+---
+
 ## Rules
 
 1. **Never ship from main** — always from a feature branch.

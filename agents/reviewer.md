@@ -255,6 +255,41 @@ Write to `.claude/pipeline/{feature-name}/06-review.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+당신의 출력(`06-review.md`) 마지막에 반드시. **reviewer는 특화 필드 추가** (Design §5.1 — 이전 에이전트 Handoff 검증 책임):
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `01-plan.md#acceptance-criteria` → verified each met
+- `02-design.md#components` → checked dev followed spec
+- `03-impl.md#components` → reviewed each cited file
+- `03-impl.md#error-handling-map` → audited each error path
+- `04-qa.md#findings` → confirmed fixes / re-flagged
+- Source files: src/{files} (full diff review)
+
+### Outputs for next agents
+- `06-review.md#verdict` → user (APPROVE/REQUEST CHANGES/BLOCK)
+- `06-review.md#findings` → developer (if iteration needed)
+
+### Decisions NOT covered by inputs
+- {scope/priority call}. Reason: {why}
+
+### Coordination signals (Required for reviewer — 2중 방어)
+- Verified Handoff Records of: planner, designer, developer, qa-tester (and browser-qa if UI)
+- Fabrication candidates found: {N or 0}
+  - {if N>0}: list each — "{agent}#{anchor} cited but {evidence}"
+- Suspicious citations flagged: {N or 0}
+  - {if N>0}: list each
+- Handoff Record compliance issues observed: {none | list}
+```
+
+> **reviewer의 2중 방어 역할**: coherence-auditor(LLM 파서)가 markdown+code 검증을 하지만, reviewer(사람-급 LLM)는 더 깊은 의도 검증을 한다. fabrication 후보 발견 시 명시적으로 기록하라. 둘이 합쳐서 fabrication에 대한 2중 방어막.
+
+---
+
 ## Rules
 
 1. **Read the whole diff** — don't skim. One missed SQL injection is worth more than 20 style nits.

@@ -207,6 +207,28 @@ Write to `.claude/pipeline/canary/canary-report.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Production URL: {url} → screenshots, perf, console
+- Pre-deploy baseline: {if available} → diff
+- `harness/user-flow.md#{flow}` → tested critical paths
+
+### Outputs for next agents
+- `canary-report.md#findings` → user (HEALTHY/MONITOR/ROLLBACK)
+- `canary-report.md#evidence` → investigator (if rollback needed)
+
+### Decisions NOT covered by inputs
+- {scope/priority call}. Reason: {why}
+
+### Coordination signals (optional)
+```
+
+---
+
 ## Rules
 1. **Test the real production URL** — not localhost
 2. **Never modify anything** — monitor and report only

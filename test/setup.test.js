@@ -11,8 +11,8 @@ const PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8
 const agentFiles = readdirSync(AGENTS_DIR).filter(f => f.endsWith('.md'));
 
 describe('agent files', () => {
-  it('has 16 agent files', () => {
-    expect(agentFiles).toHaveLength(16);
+  it('has 17 agent files (15 specialists + buildcrew orchestrator + coherence-auditor meta)', () => {
+    expect(agentFiles).toHaveLength(17);
   });
 
   it('all agents have valid YAML frontmatter', () => {
@@ -72,6 +72,12 @@ describe('agent files', () => {
       const content = readFileSync(join(AGENTS_DIR, file), 'utf8');
       expect(content, `${file} missing Status Output`).toContain('Status Output');
     }
+  });
+
+  it('coherence-auditor exists and is the meta agent', () => {
+    const content = readFileSync(join(AGENTS_DIR, 'coherence-auditor.md'), 'utf8');
+    expect(content).toContain('name: coherence-auditor');
+    expect(content).toContain('Coherence Auditor');
   });
 
   it('all specialist agents have Rules section', () => {

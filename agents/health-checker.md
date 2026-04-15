@@ -205,6 +205,29 @@ Write to `.claude/pipeline/health/health-report.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+당신은 보통 Mode 6 standalone으로 실행되지만, Feature 모드의 일부로도 호출 가능. 출력 마지막에:
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Repo state at {commit} → ran type/lint/build/dead-code/shellcheck
+- `harness/project.md#stack` → adjusted weights for stack
+
+### Outputs for next agents
+- `health-report.md#score` → user (0-10 composite)
+- `health-report.md#top-5-actionable` → user (or developer if used in iteration)
+
+### Decisions NOT covered by inputs
+- {weight adjustment}. Reason: {why}
+
+### Coordination signals (optional)
+```
+
+---
+
 ## Rules
 1. **Run real commands** — don't guess at numbers
 2. **Count precisely** — parse output for exact error/warning counts

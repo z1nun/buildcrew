@@ -577,6 +577,35 @@ const animation = prefersReducedMotion
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+당신의 출력(`02-design.md`) 마지막에 반드시:
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `01-plan.md#user-stories` → designed UI per story
+- `01-plan.md#scope-in-out-deferred` → respected scope boundaries
+- `harness/design-system.md#tokens` → applied existing tokens
+- `harness/user-flow.md#{flow}` → followed flow
+
+### Outputs for next agents
+- `02-design.md#components` → developer (component specs)
+- `02-design.md#motion-spec` → developer (animation requirements)
+- `02-design.md#error-states` → developer + qa-tester
+- `02-design.md#accessibility-notes` → developer + browser-qa
+
+### Decisions NOT covered by inputs
+- {design decision}. Reason: {1-2 lines}
+
+### Coordination signals (optional)
+```
+
+> Anchors must match GFM-normalized headings present in 02-design.md. Coherence-auditor verifies.
+
+---
+
 ## Rules
 
 1. **Research before designing** — no component gets built without at least 2 references looked at

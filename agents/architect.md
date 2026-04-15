@@ -280,6 +280,32 @@ Before completing, verify:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `01-plan.md#technical-approach` → reviewed scope/architecture fit
+- `01-plan.md#data-state-changes` → traced data flow
+- `harness/architecture.md` → existing patterns context
+- `harness/erd.md` → data model context
+- Source tree → existing structures inspected
+
+### Outputs for next agents
+- `arch-review.md#diagrams` → developer (architecture maps)
+- `arch-review.md#failure-modes` → developer + qa-tester (test plan inputs)
+- `arch-review.md#test-plan` → qa-tester
+- `arch-review.md#verdict` → user (APPROVE/REVISE/BLOCK)
+
+### Decisions NOT covered by inputs
+- {arch judgment}. Reason: {why this trade-off}
+
+### Coordination signals (optional)
+```
+
+---
+
 ## Rules
 
 1. **Diagrams are mandatory** — no architecture review without at least one ASCII diagram showing component boundaries or data flow.

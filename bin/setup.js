@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { readdir, copyFile, mkdir, readFile, writeFile, access } from "fs/promises";
-import { join, dirname } from "path";
+import { join, dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -9,6 +9,7 @@ const AGENTS_SRC = join(__dirname, "..", "agents");
 const TEMPLATES_SRC = join(__dirname, "..", "templates");
 const TARGET_DIR = join(process.cwd(), ".claude", "agents");
 const HARNESS_DIR = join(process.cwd(), ".claude", "harness");
+// (HOOK_SCRIPT path no longer needed — hooks use `npx buildcrew-hook` bin)
 const PKG = JSON.parse(await readFile(join(__dirname, "..", "package.json"), "utf-8"));
 const VERSION = PKG.version;
 
@@ -556,6 +557,39 @@ async function runInstall(force) {
     }
   }
 
+  // ─── Step 2d: CC hooks (agent lifecycle banners + events.jsonl) ───
+  try {
+    const hooksInstalled = await areHooksInstalled();
+    if (hooksInstalled) {
+      log(`  ${GREEN}Hooks:${RESET} installed ✓\n`);
+    } else {
+      log(`  ${YELLOW}Hooks${RESET} print a colored banner to your terminal whenever an`);
+      log(`  agent starts/completes or a file is written. Also feeds ${BOLD}npx buildcrew watch${RESET}.`);
+      log(`  ${DIM}Writes .claude/settings.json (+ recommended permissions)${RESET}\n`);
+      const answer = await ask(`  Install hooks? ${BOLD}(Y/n)${RESET} `);
+      if (answer === "" || answer === "y" || answer === "yes") {
+        try {
+          const { install } = await import("../lib/install-hooks.js");
+          const result = await install({
+            scope: "project",
+            cwd: process.cwd(),
+            withPermissions: true,
+          });
+          log(`\n  ${GREEN}${BOLD}Hooks installed!${RESET}`);
+          log(`  ${DIM}  hooks:       ${result.settingsPath}${RESET}`);
+          if (result.permissions?.permPath) {
+            log(`  ${DIM}  permissions: ${result.permissions.permPath}${RESET}`);
+          }
+          log(`\n  ${BOLD}Live monitor:${RESET} ${CYAN}npx buildcrew watch${RESET} ${DIM}(in a separate pane)${RESET}\n`);
+        } catch (err) {
+          log(`\n  ${RED}Hook install failed:${RESET} ${err.message}\n`);
+        }
+      } else {
+        log(`\n  ${DIM}Skipped. Hooks not installed.${RESET}\n`);
+      }
+    }
+  } catch { /* ignore, non-fatal */ }
+
   // ─── Step 3: Project harness ───
   if (!(await exists(join(HARNESS_DIR, "project.md")))) {
     const initAnswer = await ask(`  Generate project harness? ${DIM}(auto-detects your stack)${RESET} ${BOLD}(Y/n)${RESET} `);
@@ -588,6 +622,124 @@ async function runList() {
   log("");
 }
 
+async function areHooksInstalled() {
+  try {
+    const settingsPath = join(process.cwd(), ".claude", "settings.json");
+    const content = await readFile(settingsPath, "utf-8");
+    return content.includes("buildcrew-hook");
+  } catch {
+    return false;
+  }
+}
+
+async function runWatch() {
+  // Pass through to bin/watch.js — the terminal-native live monitor.
+  const watchEntry = resolve(__dirname, "watch.js");
+  const passthrough = process.argv.slice(3);
+  const { spawn } = await import("child_process");
+  const child = spawn(process.execPath, [watchEntry, ...passthrough], {
+    stdio: "inherit",
+    cwd: process.cwd(),
+    env: process.env,
+  });
+  child.on("exit", (code) => process.exit(code ?? 0));
+  child.on("error", (err) => {
+    console.error(`${RED}Watch failed to start:${RESET} ${err.message}`);
+    process.exit(1);
+  });
+}
+
+async function runReport() {
+  // Show coherence-report.md output by the coherence-auditor agent.
+  // Usage:
+  //   npx buildcrew report                Show latest coherence-report
+  //   npx buildcrew report --list         List all reports with timestamps
+  //   npx buildcrew report <feature>      Show specific feature's report
+  //   npx buildcrew report --raw          Print raw markdown (for piping)
+  const args = process.argv.slice(3);
+  const wantList = args.includes("--list") || args.includes("-l");
+  const wantRaw = args.includes("--raw");
+  const featureArg = args.find(a => !a.startsWith("-"));
+
+  const PIPELINE_DIR = join(process.cwd(), ".claude", "pipeline");
+  if (!(await exists(PIPELINE_DIR))) {
+    log(`${YELLOW}No pipeline runs found yet.${RESET}`);
+    log(`${DIM}Run ${BOLD}@buildcrew <feature>${RESET}${DIM} in Claude Code to generate one.${RESET}\n`);
+    return;
+  }
+
+  // Collect all coherence-report.md files and their mtimes
+  const features = await readdir(PIPELINE_DIR, { withFileTypes: true });
+  const reports = [];
+  const { stat } = await import("fs/promises");
+  for (const entry of features) {
+    if (!entry.isDirectory()) continue;
+    const reportPath = join(PIPELINE_DIR, entry.name, "coherence-report.md");
+    if (await exists(reportPath)) {
+      const s = await stat(reportPath);
+      reports.push({ feature: entry.name, path: reportPath, mtime: s.mtime });
+    }
+  }
+
+  if (reports.length === 0) {
+    log(`${YELLOW}No coherence-report.md found in any pipeline run.${RESET}`);
+    log(`${DIM}coherence-auditor runs at the end of Feature mode. If you ran a feature recently and don't see a report, check your buildcrew version (need >= 1.9.0).${RESET}\n`);
+    return;
+  }
+
+  reports.sort((a, b) => b.mtime - a.mtime);
+
+  if (wantList) {
+    log(`\n  ${BOLD}Coherence reports${RESET} ${DIM}(newest first)${RESET}\n`);
+    for (const r of reports) {
+      const ago = ((Date.now() - r.mtime) / 1000 / 60) | 0;
+      const when = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${(ago/60)|0}h ago` : `${(ago/1440)|0}d ago`;
+      log(`  ${CYAN}${r.feature.padEnd(30)}${RESET} ${DIM}${when.padStart(8)}${RESET}  ${DIM}${r.path}${RESET}`);
+    }
+    log(`\n  ${DIM}Show one: ${BOLD}npx buildcrew report ${CYAN}<feature>${RESET}\n`);
+    return;
+  }
+
+  // Pick target report
+  let target;
+  if (featureArg) {
+    target = reports.find(r => r.feature === featureArg);
+    if (!target) {
+      log(`${RED}No coherence-report for feature "${featureArg}".${RESET}`);
+      log(`${DIM}List all: ${BOLD}npx buildcrew report --list${RESET}\n`);
+      process.exit(1);
+    }
+  } else {
+    target = reports[0]; // latest
+  }
+
+  const content = await readFile(target.path, "utf8");
+
+  if (wantRaw) {
+    process.stdout.write(content);
+    return;
+  }
+
+  // Pretty header + content. If TTY supports it, try less for paging.
+  const header = `${BOLD}${CYAN}═══ ${target.feature} ═══${RESET}  ${DIM}${target.path}${RESET}\n\n`;
+
+  if (process.stdout.isTTY && content.split("\n").length > process.stdout.rows) {
+    // Try paging through `less -R` (preserves ANSI). Fallback to direct print.
+    try {
+      const { spawn } = await import("child_process");
+      const less = spawn("less", ["-R", "-X"], { stdio: ["pipe", "inherit", "inherit"] });
+      less.stdin.write(header + content);
+      less.stdin.end();
+      await new Promise((resolve) => less.on("exit", resolve));
+      return;
+    } catch {
+      // fall through to direct print
+    }
+  }
+
+  process.stdout.write(header + content + "\n");
+}
+
 async function runUninstall() {
   const files = (await readdir(AGENTS_SRC)).filter(f => f.endsWith(".md"));
   if (!(await exists(TARGET_DIR))) { log(`${YELLOW}No agents found.${RESET}`); return; }
@@ -614,11 +766,14 @@ async function main() {
   ${BOLD}buildcrew${RESET} v${VERSION} — 15 AI agents for Claude Code
 
   ${BOLD}Commands:${RESET}
-    npx buildcrew              Install agents
+    npx buildcrew              Install agents (also offers hooks + harness)
     npx buildcrew init         Auto-generate project harness (zero questions)
     npx buildcrew add          List harness templates
     npx buildcrew add <name>   Add a harness template
     npx buildcrew harness      Show harness file status
+    npx buildcrew watch        Live terminal monitor (stays in your shell)
+    npx buildcrew report       Show latest coherence-report (team coordination score)
+    npx buildcrew report --list   List all coherence reports
 
   ${BOLD}Options:${RESET}
     --force, -f    Overwrite existing files
@@ -627,21 +782,25 @@ async function main() {
     --version      Show version
 
   ${BOLD}Setup:${RESET}
-    ${GREEN}1.${RESET} npx buildcrew          ${DIM}Install agents${RESET}
-    ${GREEN}2.${RESET} npx buildcrew init     ${DIM}Auto-generate harness from codebase${RESET}
+    ${GREEN}1.${RESET} npx buildcrew           ${DIM}Install agents + optional hooks${RESET}
+    ${GREEN}2.${RESET} npx buildcrew init      ${DIM}Auto-generate harness from codebase${RESET}
     ${GREEN}3.${RESET} Edit .claude/harness/   ${DIM}Customize (replace <!-- comments -->)${RESET}
-    ${GREEN}4.${RESET} @buildcrew [task]   ${DIM}Start working${RESET}
+    ${GREEN}4.${RESET} npx buildcrew watch     ${DIM}(optional) live terminal monitor${RESET}
+    ${GREEN}5.${RESET} @buildcrew [task]       ${DIM}Start working${RESET}
 
   ${BOLD}More info:${RESET} https://github.com/z1nun/buildcrew
 `);
     return;
   }
 
-  if (args.includes("--list") || args.includes("-l")) return runList();
-  if (args.includes("--uninstall")) return runUninstall();
+  // Subcommand routing takes priority over global --list (so `report --list` works)
   if (command === "init") return runInit(force);
   if (command === "add") return runAdd(subcommand, force);
   if (command === "harness") return runHarnessStatus();
+  if (command === "watch") return runWatch();
+  if (command === "report") return runReport();
+  if (args.includes("--list") || args.includes("-l")) return runList();
+  if (args.includes("--uninstall")) return runUninstall();
 
   return runInstall(force);
 }

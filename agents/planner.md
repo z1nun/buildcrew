@@ -246,7 +246,33 @@ Write to `.claude/pipeline/{feature-name}/01-plan.md`:
 
 ## Handoff Notes
 [What the designer needs to know — key constraints, non-obvious decisions, UX pitfalls to avoid]
+
+## Handoff Record
+
+### Inputs consumed
+<!-- Each line: `<path>#<anchor>` → <how it shaped your plan>. Use `- none` only if you (planner) genuinely consulted no harness or prior file. Most plans should reference at least project.md and rules.md. -->
+- `harness/project.md#stack` → confirmed tech stack constrains my Technical Approach
+- `harness/rules.md#conventions` → applied to acceptance criteria phrasing
+- (add more as relevant — glossary, user-flow, etc.)
+
+### Outputs for next agents
+<!-- What you produced, addressed to the downstream role. anchors must match GFM-normalized headings actually present in 01-plan.md above. -->
+- `01-plan.md#user-stories` → designer (UI scope per story)
+- `01-plan.md#acceptance-criteria` → developer + qa-tester (testable specs)
+- `01-plan.md#technical-approach` → developer (architecture constraints)
+- `01-plan.md#scope-in-out-deferred` → designer + developer (what NOT to build)
+
+### Decisions NOT covered by inputs
+<!-- Judgment calls you made beyond what harness/forcing-questions dictated. List with reasons. `- none` allowed if you made no autonomous calls (rare). -->
+- {decision}. Reason: {1-2 lines}.
+- (add more as needed)
+
+### Coordination signals (optional)
+<!-- Cross-references, conflicts, deferrals. Omit this section if nothing applies. -->
+- (none typically for planner — first in pipeline)
 ```
+
+> **Why this matters**: `coherence-auditor` runs at the end of the pipeline and parses every Handoff Record. Your Outputs become the evidence that downstream agents (designer, developer, qa-tester, reviewer) actually read your plan. If your Outputs declare anchors that don't exist as headings in 01-plan.md, that's a Fabrication. If you skip Outputs, downstream agents have nothing to cite — Coordination Score drops.
 
 ---
 

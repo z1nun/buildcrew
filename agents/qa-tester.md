@@ -301,6 +301,35 @@ After developer fixes issues from a previous QA round:
 
 ---
 
+# Handoff Record (Required at end of every output file)
+
+당신의 출력(`04-qa.md`) 마지막에 반드시:
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `01-plan.md#acceptance-criteria` → built test map from these
+- `03-impl.md#components` → tested these files
+- `03-impl.md#tests-needed` → covered listed edge cases
+- `03-impl.md#error-handling-map` → verified each entry
+- Source files: src/{file}.tsx (read for FAIL evidence)
+
+### Outputs for next agents
+- `04-qa.md#findings` → reviewer (bugs to verify fix)
+- `04-qa.md#test-map` → browser-qa (UI test plan)
+- `04-qa.md#severity-summary` → reviewer (priority order)
+
+### Decisions NOT covered by inputs
+- {test scope decision}. Reason: {why beyond plan}
+
+### Coordination signals (optional)
+```
+
+> qa-tester가 `03-impl.md#components` 인용 안 하면 testing-without-reading-impl으로 flag.
+
+---
+
 # Rules
 
 1. **Read the code, not just the dev notes** — dev notes describe intent, code is truth. Always verify claims against actual implementation.

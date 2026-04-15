@@ -5,3 +5,7 @@ node_modules/
 .env
 .claude/pipeline/
 .claude/harness-backup/
+.claude/buildcrew/
+.claude/settings.json
+.claude/settings.local.json
+.gstack/

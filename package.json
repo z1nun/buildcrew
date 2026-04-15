@@ -1,16 +1,19 @@
 {
   "name": "buildcrew",
-  "version": "1.8.7",
+  "version": "1.9.2",
   "description": "15 AI agents for Claude Code — full development lifecycle from product thinking to production monitoring",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "buildcrew": "./bin/setup.js"
+    "buildcrew": "./bin/setup.js",
+    "buildcrew-hook": "./bin/hook.js",
+    "buildcrew-watch": "./bin/watch.js"
   },
   "files": [
     "bin/",
+    "lib/",
     "agents/",
     "templates/",
     "README.md",
@@ -34,7 +37,8 @@
     "url": "https://github.com/z1nun/buildcrew.git"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "watch": "node bin/watch.js"
   },
   "devDependencies": {
     "vitest": "^4.1.0"
