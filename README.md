@@ -137,6 +137,57 @@ Each iteration runs the **full end-to-end pipeline**:
 
 ---
 
+## Verifiable Coordination
+
+How do you know the 15 agents actually worked as a team, instead of running in sequence and pretending to collaborate?
+
+buildcrew answers this with **Coordination Score** — a 0-100% measurement output at the end of every Feature run.
+
+### How it works
+
+1. **Every agent ends its output with a `## Handoff Record` section** declaring three things:
+   - `Inputs consumed` — what files/sections it actually read
+   - `Outputs for next agents` — what it produced and who should consume it
+   - `Decisions NOT covered by inputs` — autonomous judgment calls with reasons
+
+2. **A meta-agent `coherence-auditor` runs LAST** and:
+   - Parses every Handoff Record
+   - Cross-checks: did agent B actually cite agent A's outputs?
+   - Reads cited source files to verify the implementation matches the cited requirement (CONFIRMED / PARTIAL / MISSING_IN_CODE)
+   - Computes Coordination Score and writes `coherence-report.md`
+
+3. **The crew report shows the score**:
+
+```
+📊 buildcrew Report
+─────────────────────────────
+✅ Agents: planner, designer, developer, qa-tester, reviewer, coherence-auditor
+🔄 Iterations: 2/3
+🎯 Coordination Score: 82% — Normal (9/11 edges, 0 fabrications, 2 gaps)
+📁 Output: .claude/pipeline/{feature-name}/
+   └── coherence-report.md (full coordination analysis)
+─────────────────────────────
+```
+
+### Score thresholds
+
+| Score | Status | What it means |
+|---|---|---|
+| 90-100 | Healthy | Real team collaboration |
+| 70-89 | Normal | Minor gaps, ship-ready |
+| 50-69 | Suspicious | Coordination has holes — review the design |
+| 0-49 | Theater | ⚠️ This is not a team — it's 15 independent scripts |
+
+### What gets caught
+
+- **Gaps**: agent A declared output X for agent B, but B never cited it
+- **Fabrications**: agent B cited "plan section #4" that doesn't exist, or claimed to implement X but the code shows no evidence
+- **Orphans**: an agent whose work nothing downstream cited (the team ignored its output)
+
+This makes "team collaboration" a measurable property, not a marketing claim. Full spec: `docs/02-design/coordination-verifiability.md`. Policy: `docs/ADR-001-deps.md`.
+
+---
+
 ## Harness Engineering
 
 `npx buildcrew` auto-detects your stack and generates a project harness.
@@ -177,6 +228,83 @@ Add any `.md` file to `.claude/harness/` — agents read them all.
 npx buildcrew harness     # Check which files need editing
 npx buildcrew add         # List available templates
 ```
+
+---
+
+## Dashboard
+
+Real-time observability for buildcrew sessions. A pixel-art office visualization where your 15 agents come alive — walking between rooms, filing issues, and progressing through the pipeline — all powered by Claude Code hooks and zero external dependencies.
+
+### Quick Start
+
+```bash
+# 1. Install hooks into your project
+npx buildcrew-dashboard --install
+
+# 2. Start the dashboard server (opens browser automatically)
+npx buildcrew-dashboard
+```
+
+Then open any Claude Code session with `@buildcrew` in the same directory. Events stream to the dashboard in real time.
+
+### What You See
+
+| Panel | Description |
+|-------|-------------|
+| **Pixel Town** | 5 rooms (Meeting, QA Lab, SecOps, Think Tank, Field) with 16 animated agent sprites |
+| **Stage Ladder** | Pipeline progress: PLAN → DESIGN → DEV → QA → REVIEW → SHIP |
+| **Billboard** | Current stage, notification badge, issue ticker |
+| **Log Panel** | 3 tabs — Events (filterable log), Dialogue (agent conversation view), Terminal (command output) |
+
+### Command Bar
+
+The Terminal tab includes a command bar that spawns `claude -p` on the server. Three permission modes:
+
+| Mode | Flag | Use When |
+|------|------|----------|
+| **Strict** | `default` | Production work — every tool call needs approval |
+| **Normal** | `acceptEdits` | Day-to-day — file edits auto-approved |
+| **Trust** | `bypassPermissions` | Demos and solo work — everything auto-approved |
+
+### Hooks
+
+`--install` adds four Claude Code hooks to `.claude/settings.json`:
+
+- **PreToolUse** (Agent) — captures agent dispatch
+- **PostToolUse** (Agent, Write/Edit) — captures agent completion and file writes
+- **UserPromptSubmit** — captures session start
+- **Stop** — captures session end
+
+Hooks are tagged `buildcrew-dashboard` for safe removal via `--uninstall`. They timeout at 500ms and never block Claude Code.
+
+### Multi-Session
+
+The dashboard tracks multiple concurrent Claude Code sessions in the same project. Each session gets a unique color chip. Filter by session to see isolated event streams.
+
+### CLI Options
+
+| Flag | Description |
+|------|-------------|
+| `--install` | Install Claude Code hooks (project-local) |
+| `--install --global` | Install hooks globally |
+| `--install --with-permissions` | Also auto-allow buildcrew tool calls |
+| `--install --dry-run` | Preview changes without writing |
+| `--uninstall` | Remove hooks |
+| `--uninstall --global` | Remove global hooks |
+| `--port N` | Custom port (default: 3737) |
+| `--no-open` | Start server without opening browser |
+
+### Demo Mode
+
+```bash
+# Terminal 1: start the dashboard
+npx buildcrew-dashboard
+
+# Terminal 2: run the demo script
+node node_modules/buildcrew/bin/dashboard-demo.js
+```
+
+The demo simulates a full Feature pipeline with realistic Korean dialogue between agents.
 
 ---
 
@@ -246,4 +374,4 @@ Agents include version headers. When you run `npx buildcrew` on an existing proj
 
 MIT
 
-<!-- v1.8.5 -->
+<!-- v1.9.0 -->

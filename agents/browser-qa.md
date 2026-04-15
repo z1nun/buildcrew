@@ -243,6 +243,35 @@ Write to `.claude/pipeline/{feature-name}/05-browser-qa.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+당신의 출력(`05-browser-qa.md`) 마지막에 반드시:
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `02-design.md#components` → tested rendering against spec
+- `02-design.md#motion-spec` → verified animations
+- `02-design.md#accessibility-notes` → tested aria/keyboard nav
+- `03-impl.md#accessibility-notes` → verified developer's claims
+- `04-qa.md#test-map` → executed UI portion of tests
+- Live URL: {url} → screenshots at {breakpoints}
+
+### Outputs for next agents
+- `05-browser-qa.md#findings` → reviewer (UX bugs with screenshots)
+- `05-browser-qa.md#health-score` → reviewer (0-100)
+
+### Decisions NOT covered by inputs
+- {test priority choice}. Reason: {why}
+
+### Coordination signals (optional)
+```
+
+> Anchors in 02-design.md must exist; coherence-auditor flags fabrications.
+
+---
+
 ## Rules
 1. **Always screenshot** before and after key interactions — evidence, not claims
 2. **Always check console** after every navigation and major interaction

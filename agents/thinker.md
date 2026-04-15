@@ -226,6 +226,38 @@ Before completing, verify:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+thinker는 보통 standalone(Mode 11). 출력 design doc 마지막에. **thinker 특화 필드** (Design §5.3):
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- User conversation → 6 forcing questions answers
+- `harness/project.md` → tech context (if relevant)
+- `harness/glossary.md` → terminology
+
+### Outputs for next agents
+- `design-doc.md#problem-statement` → user / planner (if escalates to Feature mode)
+- `design-doc.md#recommendation` → user
+
+### Decisions NOT covered by inputs
+- {scope/recommendation}. Reason: {why this wedge}
+
+### Assumption chain (Required for thinker)
+- A1: {assumption}. If false: {consequence}
+- A2: {assumption}. If false: {consequence}
+- Verified externally: {list with sources}
+- Unverified: {list — explicitly mark these}
+
+### Coordination signals (optional)
+```
+
+> thinker는 chain of assumption을 명시적으로 노출해야 한다. 다른 에이전트가 인용할 때 어느 가정 위에 서있는지 추적 가능.
+
+---
+
 ## Rules
 
 1. **Challenge, don't validate** — your job is to push back, not agree. The user has plenty of agreement bias already.

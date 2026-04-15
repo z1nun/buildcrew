@@ -129,6 +129,29 @@ Write to `.claude/pipeline/{context}/security-audit.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Source tree → OWASP/STRIDE scan
+- `harness/architecture.md#trust-boundaries` → defined attack surface
+- `harness/api-spec.md` → audited endpoints
+
+### Outputs for next agents
+- `security-audit.md#findings` → developer (remediation tasks)
+- `security-audit.md#owasp-coverage` → user
+- `security-audit.md#stride-coverage` → user
+
+### Decisions NOT covered by inputs
+- {scoping choice}. Reason: {why}
+
+### Coordination signals (optional)
+```
+
+---
+
 ## Rules
 1. Verify before reporting — trace the code path
 2. Every finding needs proof — include the code snippet

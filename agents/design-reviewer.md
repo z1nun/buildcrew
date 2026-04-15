@@ -226,6 +226,42 @@ Before completing, verify:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+design-reviewer 특화 필드 (Design §5.5):
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Live URL: {url} → screenshots at 3 breakpoints
+- `harness/design-system.md` → tokens for compliance check
+- `02-design.md` (if exists) → compared rendered vs. spec
+
+### Outputs for next agents
+- `design-review.md#scores` → user / developer (per dimension)
+- `design-review.md#top-3-fixes` → developer (highest impact)
+- `design-review.md#wcag-violations` → developer + browser-qa
+
+### Decisions NOT covered by inputs
+- {dimension priority}. Reason: {why this matters most}
+
+### UX score provenance (Required for design-reviewer)
+- Score: {N}/10 across {dimensions: hierarchy, contrast, motion, ...}
+- Dimension breakdown cited from:
+  - Hierarchy {N}/10 → screenshot at {url}, line {file:line} CSS
+  - Contrast {N}/10 → measurement: {ratio}:1 (browser dev tools)
+  - Motion {N}/10 → reference {file:line} or "no motion observed"
+- Low-scoring dimensions specifics:
+  - {dim} → fix at {file:line}: {one-line fix}
+
+### Coordination signals (optional)
+```
+
+> 점수 옆에 항상 측정 근거. "low contrast"는 의견, "3.2:1"은 사실.
+
+---
+
 ## Rules
 
 1. **Screenshot everything** — scores without visual evidence are opinions. Take screenshots at each breakpoint.

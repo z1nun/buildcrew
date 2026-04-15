@@ -286,6 +286,45 @@ Write to `.claude/pipeline/{context}/investigation.md`:
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+investigator 특화 필드 (Design §5.2):
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Bug report from user → reproduction steps
+- `harness/architecture.md` → component context
+- `harness/erd.md` → data model context
+- Source files: src/{file}.tsx (read for hypotheses)
+- Logs / errors → evidence collected
+
+### Outputs for next agents
+- `investigation.md#root-cause` → developer (fix target)
+- `investigation.md#test-coverage-gap` → qa-tester (regression test)
+- `investigation.md#fix` → developer (if minimal fix included)
+
+### Decisions NOT covered by inputs
+- {scope of fix}. Reason: {why minimal vs. broader}
+
+### Root cause trace (Required for investigator)
+- Hypothesis: {one-sentence claim}
+- Evidence collected:
+  - {file:line} → {what observation supports}
+  - (repeat — minimum 3 evidence points before settling on a root cause)
+- Disproved hypotheses:
+  - H_disproved_1 → {evidence that ruled out}
+- Final root cause: {statement} anchored at {file:line}
+- Confidence: {N}/10
+
+### Coordination signals (optional)
+```
+
+> 모든 evidence는 file:line으로 anchored. "I think"는 evidence 아님.
+
+---
+
 ## Rules
 
 1. **Never guess** — every fix traces to a confirmed root cause. If you can't explain WHY the bug happens, you haven't found the cause.

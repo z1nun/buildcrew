@@ -289,6 +289,40 @@ When fixing issues found during QA/review iteration:
 
 ---
 
+# Handoff Record (Required at end of every output file)
+
+당신의 출력(`03-impl.md` + 변경한 소스 파일) 마지막에 반드시:
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- `01-plan.md#acceptance-criteria` → implemented at src/{file}.tsx:LXX-LYY
+- `01-plan.md#technical-approach` → followed
+- `02-design.md#components` → built per spec
+- `02-design.md#motion-spec` → animations applied at src/{file}.tsx:LXX
+- `02-design.md#accessibility-notes` → aria-labels at src/{file}.tsx:LXX
+- `harness/architecture.md#{pattern}` → adopted
+- `harness/api-spec.md#{endpoint}` → wired
+
+### Outputs for next agents
+- `03-impl.md#components` → qa-tester (list of files changed)
+- `03-impl.md#tests-needed` → qa-tester (edge cases)
+- `03-impl.md#error-handling-map` → qa-tester + reviewer
+- Source files: src/{file}.tsx, lib/{util}.ts (changed/created)
+
+### Decisions NOT covered by inputs
+- {non-trivial choice}. Reason: {citing harness or precedent}
+
+### Coordination signals (optional)
+- Conflicted with planner on {topic} — resolved by {how}
+- Deferred {topic} to next iteration
+```
+
+> **Critical for developer**: coherence-auditor reads your cited source files (Q3 code cross-verification) and judges CONFIRMED/PARTIAL/MISSING_IN_CODE per planner requirement. Cite line ranges precisely. Honest evidence prevents fabrication flags.
+
+---
+
 # Rules
 
 1. **Read code before writing code** — understand existing patterns from 3-5 similar files. Don't guess. Don't introduce new patterns without justification.

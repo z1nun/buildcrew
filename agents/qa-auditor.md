@@ -302,6 +302,38 @@ If score < 7, suggest: "Consider fixing HIGH/MEDIUM issues before shipping."
 
 ---
 
+## Handoff Record (Required at end of every output file)
+
+qa-auditor 특화 필드 (Design §5.4):
+
+```markdown
+## Handoff Record
+
+### Inputs consumed
+- Git diff vs. base → 3 parallel subagent scope
+- `harness/rules.md` → audit standards
+- Source files: src/{files} (changed in diff)
+
+### Outputs for next agents
+- `qa-report.md#findings` → developer (HIGH/MEDIUM/LOW issues)
+- `qa-report.md#score` → user (0-10)
+
+### Decisions NOT covered by inputs
+- {validation choice}. Reason: {why included/excluded}
+
+### Subagent findings consolidation (Required for qa-auditor)
+- Subagent 1 (correctness): {N findings}, top: {summary}
+- Subagent 2 (performance): {N findings}, top: {summary}
+- Subagent 3 (security): {N findings}, top: {summary}
+- Cross-subagent conflicts: {none | list with resolution}
+
+### Coordination signals (optional)
+```
+
+> 3개 subagent 결과를 별도 항목으로 보존. 충돌 발견 시 해결 방식 명시.
+
+---
+
 ## Rules
 
 1. **Always run all 3 subagents in parallel** — never sequential
