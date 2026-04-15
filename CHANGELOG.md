@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.9.2
+
+Quality-of-life patch — fixes two papercuts that made `buildcrew watch` and the hook pipeline unreliable on consumer projects.
+
+### Fixed
+
+- **Hook installer no longer 404s on consumers.** The generated `.claude/settings.json` used `npx buildcrew-hook <kind>`, which makes npx look up `buildcrew-hook` as a package name in the npm registry. That package does not exist (it's a bin inside the `buildcrew` package), so every hook fired with HTTP 404 and silently dropped every `agent.dispatched` / `agent.completed` / `file.written` / `session.*` event. The watch dashboard and coherence pipeline could never populate. Now the installer resolves an absolute path to `lib/hook.js` at install time and emits `node "<abs-path>" <kind>` — no registry lookup, no per-call latency, immune to npx cache eviction, and shell-safe for non-ASCII install paths.
+- **`buildcrew watch` no longer flickers.** Three causes were stacked: (1) full-screen clear `\x1b[2J\x1b[H` flashed an empty buffer between frames, (2) the ~30 per-frame `console.log` calls each flushed independently, exposing intermediate paint states, (3) the 1Hz heartbeat redrew the whole screen for elapsed-time updates. Now we collect the entire frame into a buffer and emit it in a single `stdout.write` using cursor-home + per-line erase-to-EOL + trailing erase-below.
+- **`buildcrew watch` enters the alternate screen buffer** on start and leaves it on quit, so quitting returns the user to their pre-watch terminal state instead of leaving the dashboard scribble in scrollback.
+- **NOW agents no longer "run forever".** When CC's @-mention parsing emits `agent.dispatched` without a matching `agent.completed` (the parser tags textual mentions as dispatches even when no Agent tool actually runs), the NOW section showed agents as active with elapsed time growing across the whole watch session. On `session.end` we now sweep every still-active agent into completedAgents.
+- **PIPELINE / ROSTER reset on session boundaries.** Previously every checkmark and stage was cumulative across the entire `events.jsonl` history, so the pipeline showed "DESIGN ✓ DEV ✓" even when the current session had only asked a question. Now `session.start` clears per-session state (current stage, completed stages, completed agents, file/issue/event counters, recent log) while preserving coherence (file-derived) and session metadata.
+
+### Changed
+
+- Watch palette: replaced the dim `\x1b[90m` gray with a brighter 256-color light gray (`\x1b[38;5;250m`). Active-agent prompts and log dispatch text are no longer wrapped in gray — they're real content, not metadata. A new `muted` color (`\x1b[38;5;244m`) is used for timestamps and separators.
+
+### Upgrading
+
+Existing projects need to re-run `npx buildcrew@latest setup` once to regenerate `.claude/settings.json` with the new hook command. Verify the result with `grep '"command"' .claude/settings.json` — it should show `node "<abs-path>/lib/hook.js" …`, not `npx buildcrew-hook …`.
+
 ## v1.9.1
 
 Coherence visibility — make the coordination score immediately accessible from the CLI and live watch, without manually opening files.
