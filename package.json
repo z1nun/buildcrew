@@ -1,6 +1,6 @@
 {
   "name": "buildcrew",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "17 AI agents for Claude Code — full development lifecycle with adversarial challengers at plan and spec boundaries",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",
@@ -38,10 +38,13 @@
   },
   "scripts": {
     "test": "vitest run",
+    "lint": "eslint bin lib test eslint.config.js",
     "watch": "node bin/watch.js"
   },
   "devDependencies": {
-    "vitest": "^4.1.0"
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0",
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=18"

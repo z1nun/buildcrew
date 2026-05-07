@@ -1,5 +1,68 @@
 # Changelog
 
+## v1.11.0
+
+Internal hardening release. No public API or CLI behavior changes — every command (`init`, `add`, `install`, `watch`, `report`, `list`, `--version`, `--help`) routes identically. The work consolidates two large bin scripts into testable module trees, raises test coverage from 73 to 171, lands an ESLint 9 flat config that matches the harness `rules.md`, clears two transitive `npm audit` advisories, and makes the hook entry point silent-fail so it can never block Claude Code prompts.
+
+### Why
+
+`bin/setup.js` (814 lines, 14 functions) and `bin/watch.js` (653 lines, 23 functions) had grown into the two pieces of the codebase most likely to silently break and least amenable to testing. The setup binary mixed init/add/install/watch/report/list/uninstall in a single file; the watch binary mixed event parsing, ANSI rendering, file tailing, and stdin handling. Both are now ~55-line orchestrators delegating to focused modules, with the parser (the surface most likely to silently break the dashboard) testable in isolation.
+
+### Changed: `bin/setup.js` split into `lib/cli/`
+
+- `bin/setup.js` 814 → 55 lines. Now a thin argv router.
+- New modules under `lib/cli/`:
+  - `utils.js` — ANSI palette, `log`/`exists`/`ask`, path constants
+  - `templates.js` — `TEMPLATES` registry + `detectProject()`
+  - `init.js` — `runInit` + `buildProjectMd` + `buildRulesMd`
+  - `add.js` — `runAdd` + `runHarnessStatus`
+  - `install.js` — `runInstall` + `runUninstall` + `areHooksInstalled`
+  - `list.js` — `runList`
+  - `watch.js` — wrapper around `bin/watch.js`
+  - `report.js` — `runReport`
+  - `help.js` — `runHelp` + `runVersion`
+- Subcommand routing still precedes the global `--list` flag, so `report --list` resolves correctly. `detectProject`, `buildProjectMd`, `buildRulesMd` are now pure functions exposed for snapshot-style tests.
+
+### Changed: `bin/watch.js` split into `lib/watch/`
+
+- `bin/watch.js` 653 → 59 lines. Now a boot orchestrator: build state, wire renderer, start tail loop.
+- New modules:
+  - `lib/watch/state.js` (327 lines) — `events.jsonl` parser, coherence loader, file tailer. `handleEvent` only mutates the state passed in.
+  - `lib/watch/render.js` (338 lines) — ANSI palette + frame composition. Read-only over state. `scheduleRender` lives here.
+  - `lib/watch/input.js` (80 lines) — alt-screen lifecycle, signal handlers, keypress dispatch (`q` quit, `r` open coherence report).
+
+### Added: ESLint 9 flat config (`eslint.config.js`)
+
+- Encodes `.claude/harness/rules.md` as enforceable lint rules so the lint pass and the agent review pass agree on what counts as a violation.
+- Rules: `no-console: error` (overridden in 5 files that own terminal output), `no-var`, `prefer-const`, `no-unused-vars` with `^_` exception, `no-restricted-syntax` banning `ExportDefaultDeclaration` (rules.md: "no default exports"), `eqeqeq` with `{ null: "ignore" }` (`== null` is canonical nullish check), `prefer-arrow-callback` (warn). Test files allow `console` for debugging.
+- Real violations fixed (not silenced): unused imports in `lib/cli/help.js`, `test/setup.test.js`, `test/hook-events.test.js`. Three redundant inline `eslint-disable-next-line` directives removed.
+- `npm run lint` now passes with 0 errors, 0 warnings.
+
+### Fixed: hook entry point can never block CC
+
+- `bin/hook.js` `await import("../lib/hook.js")` had no catch — a corrupted install would surface a hook-failure popup on every CC prompt.
+- `lib/hook.js` `main()` was called without `.catch()` — any throw in a try-less branch became an unhandled rejection.
+- Both now silent-fail (exit 0). Errors surface to stderr only when `BUILDCREW_HOOK_DEBUG=1`, preserving the documented "hooks must never block CC" guarantee while keeping a debug knob.
+
+### Added: `BUILDCREW_HOOK_DEBUG` env var
+
+- Set `BUILDCREW_HOOK_DEBUG=1` to surface hook errors to stderr instead of silent-failing. Off by default.
+
+### Added: test coverage 73 → 171 (+98 tests, +134%)
+
+- `test/install-hooks.test.js` (18 tests) — install/uninstall against real tmp dir: merge idempotency, preserves user's non-buildcrew hooks, `settings.local.json` for permissions, permission de-dup on merge, uninstall removes empty `hooks` key, backup on overwrite, absolute-path node command (matches v1.9.2 fix that was bare-untested before).
+- `test/hook-events.test.js` (24 tests) — drives `toEvents()` with synthetic CC payloads: all 6 event kinds + unknown-kind fallback, prompt/summary truncation contracts (400/500 chars), `@mention` parsing dedup + lowercase + whitespace-required regex (so `user@example.com` doesn't dispatch), `session_id` synthesis, file-written agent fallback to `"buildcrew"`. To enable testing, `lib/hook.js` now exports `toEvents` and skips `main()` when `BUILDCREW_HOOK_TEST=1` (zero runtime behavior change).
+- `test/watch-state.test.js` (28 tests) — parser contract: `session.start` state-clear semantics, agent lifecycle + sweep, coherence reload triggers, recent-window caps, `parseCoherenceReport` tolerance.
+- `test/cli-templates.test.js`, `test/cli-init.test.js`, `test/cli-install.test.js` (28 tests) — unit coverage of newly extracted CLI modules.
+
+### Changed: dev dependencies
+
+- `vitest` 4.1.2 → 4.1.5 transitively pulls `vite` 8.0.3 → 8.0.10 (clears HIGH advisories GHSA-4w7w-66w2-5vf9, v2wj-q39q-566r, p9ff-h696-f583 — path traversal, `server.fs.deny` bypass, dev-server WS arbitrary file read) and `postcss` 8.5.8 → 8.5.14 (clears MODERATE advisory GHSA-qx2v-qp2m-jg93 — XSS in CSS stringify). Both vulnerabilities only affect dev tooling — buildcrew's runtime is dep-free — but `npm audit` now reports 0 vulnerabilities for contributors.
+
+### Upgrading
+
+No action required for existing projects. The CLI, agents, hooks, and watch dashboard all behave identically to v1.10.0. `npm install buildcrew@latest` to pick up the audit-clean lockfile.
+
 ## v1.10.0
 
 Adversarial challengers at plan and spec boundaries. Two new agents — `plan-challenger` and `spec-challenger` — run between existing pipeline stages and attack the upstream artifact before downstream agents commit. Catches wrong premises and under-specified designs while they're still cheap to fix, instead of letting errors compound through design → dev → QA.
