@@ -10,7 +10,7 @@
  * set BUILDCREW_HOOK_TEST=1 BEFORE the import to skip the auto-run. This
  * env guard is intentionally documented in lib/hook.js.
  */
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // MUST set this BEFORE the import — vitest hoists imports above other code,
 // but vi.mock-style env setup via beforeAll runs after imports. Use

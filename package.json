@@ -38,9 +38,12 @@
   },
   "scripts": {
     "test": "vitest run",
+    "lint": "eslint bin lib test eslint.config.js",
     "watch": "node bin/watch.js"
   },
   "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0",
     "vitest": "^4.1.5"
   },
   "engines": {

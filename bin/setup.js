@@ -49,7 +49,7 @@ async function main() {
 }
 
 main().catch(err => {
-  // eslint-disable-next-line no-console -- error channel must reach stderr
+  // Error channel must reach stderr — file is in eslint.config.js no-console override.
   console.error(`${RED}Error:${RESET} ${err.message}`);
   process.exit(1);
 });
