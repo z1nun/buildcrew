@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.12.0
+
+Agent Skills release. buildcrew now ships its pipelines in the open [Agent Skills](https://agentskills.io) SKILL.md standard alongside the existing Claude Code subagents — one install works across Claude Code, Codex, GitHub Copilot, Cursor, Gemini CLI and other skills-compatible tools.
+
+### Added: `skills/` distribution
+
+- 7 skills covering the 13 operating modes: `buildcrew` (full feature pipeline), `buildcrew-qa`, `buildcrew-security`, `buildcrew-debug`, `buildcrew-review`, `buildcrew-ship`, `buildcrew-think`.
+- Each SKILL.md carries the pipeline order, discipline rules (challengers, reviewer independence, iteration caps, Handoff Records) and points at `.claude/agents/*.md` as the single source of truth for role prompts. With subagent support the skill dispatches subagents; in single-context tools it adopts roles sequentially.
+- `npx buildcrew` now syncs `skills/<name>/SKILL.md` → `.claude/skills/<name>/` with the same version-aware update logic as agents (new → copy, version bump → update, else skip; `--force` overwrites). `--uninstall` removes only the skills this package ships — user-authored skills are untouched.
+- New `syncSkills()` in `lib/cli/install.js`, exported for tests. 10 new tests (source-shape validation mirroring the agent checks + sync behavior in a tmp cwd): 171 → 181.
+
+### Changed
+
+- `package.json`: `skills/` added to published files; keywords gained `agent-skills`, `claude-skills`; applied `npm pkg fix` normalizations from the v1.11.0 publish warnings (bin paths without `./`, `repository.url` in `git+https` form).
+- README: new "Agent Skills" section.
+
 ## v1.11.0
 
 Internal hardening release. No public API or CLI behavior changes — every command (`init`, `add`, `install`, `watch`, `report`, `list`, `--version`, `--help`) routes identically. The work consolidates two large bin scripts into testable module trees, raises test coverage from 73 to 171, lands an ESLint 9 flat config that matches the harness `rules.md`, clears two transitive `npm audit` advisories, and makes the hook entry point silent-fail so it can never block Claude Code prompts.
