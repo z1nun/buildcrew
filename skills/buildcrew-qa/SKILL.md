@@ -1,7 +1,7 @@
 ---
 name: buildcrew-qa
 description: QA a project with buildcrew quality roles — browser QA via Playwright, 3-lens QA audit on git diffs, or a 0-10 code health score. Use when the user asks to test the site, audit code quality, run QA, or get a health check.
-version: 1.14.0
+version: 1.15.0
 ---
 
 # buildcrew-qa — Quality Modes

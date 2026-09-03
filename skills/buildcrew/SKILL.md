@@ -1,7 +1,7 @@
 ---
 name: buildcrew
 description: Run the full buildcrew feature pipeline — plan, adversarial challenge, design, implement, QA, review, coherence audit. Use when the user asks to build, add, or implement a feature and wants the structured multi-agent lifecycle instead of ad-hoc coding.
-version: 1.14.0
+version: 1.15.0
 ---
 
 # buildcrew — Feature Pipeline
@@ -24,9 +24,15 @@ Read the relevant file before executing a stage.
 
 ```
 planner → plan-challenger → (revise ≤2) → designer → spec-challenger → (revise ≤2)
-        → developer → qa-tester → browser-qa (UI only)
-        → spec-verifier → (fix ≤2) → reviewer → coherence-auditor
+        → developer → [qa-tester ∥ browser-qa (UI only) ∥ spec-verifier]  ← parallel fleet
+        → (fix ≤2) → reviewer → coherence-auditor
 ```
+
+**Parallel fleet**: qa-tester, browser-qa, and spec-verifier are read-only and
+independent — with subagent support, dispatch all of them in a single message so
+they run concurrently; without it, run them back-to-back. Gate on the combined
+result: any failure → developer fixes once from the merged list → re-run only the
+failed members (max 2 cycles). Never run two write-capable roles concurrently.
 
 Role files: `planner.md`, `plan-challenger.md`, `designer.md`, `spec-challenger.md`,
 `developer.md`, `qa-tester.md`, `browser-qa.md`, `spec-verifier.md`, `reviewer.md`,

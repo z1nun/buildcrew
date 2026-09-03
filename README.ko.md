@@ -22,7 +22,7 @@ AI 코딩 에이전트가 아무리 똑똑해도, 구조 없이 쓰면 결과가
 
 ```
 나:     @buildcrew 유저 인증 추가해줘
-크루:   기획자 → 디자이너 → 개발자 → QA → 브라우저 QA → 스펙검증 → 리뷰어 → 배포
+크루:   기획자 → 디자이너 → 개발자 → [QA ∥ 브라우저 QA ∥ 스펙검증] → 리뷰어 → 배포
 ```
 
 외부 의존성 없음. 런타임 없음. 바이너리 없음. 마크다운 파일만으로 동작합니다.
@@ -111,7 +111,7 @@ npx buildcrew
 
 | 모드 | 예시 | 파이프라인 |
 |------|------|----------|
-| **Feature** | "유저 대시보드 추가해줘" | 기획 → plan-challenger → 디자인 → spec-challenger → 개발 → QA → 브라우저 QA → spec-verifier → 리뷰 → coherence 감사 |
+| **Feature** | "유저 대시보드 추가해줘" | 기획 → plan-challenger → 디자인 → spec-challenger → 개발 → [QA ∥ 브라우저 QA ∥ spec-verifier] 병렬 → 리뷰 → coherence 감사 |
 | **Project Audit** | "프로젝트 전체 점검해줘" | 스캔 → 우선순위 → 수정 → 검증 (반복) |
 | **Browser QA** | "브라우저 테스트해줘" | Playwright 테스트 + 건강 점수 |
 | **Security** | "보안 점검해줘" | OWASP + STRIDE + 시크릿 + 의존성 |
@@ -205,6 +205,19 @@ Claude Code에서는 스킬이 설치된 서브에이전트를 디스패치하�
 npx buildcrew harness     # 어떤 파일을 편집해야 하는지 확인
 npx buildcrew add         # 사용 가능한 템플릿 목록
 ```
+
+---
+
+## 병렬 품질 Fleet
+
+읽기 전용 단계는 부채꼴로 펼치고, 쓰기 단계는 혼자 돕니다. v1.15부터 오케스트레이터가 독립적인 검증 에이전트들을 **동시에** 디스패치합니다:
+
+- **검증 fleet** — 개발 완료 후 qa-tester ∥ browser-qa ∥ spec-verifier를 한 번에 병렬 실행. 실패가 있으면 통합 목록으로 개발자가 1회 수정 → 실패했던 멤버만 재실행(최대 2회).
+- **병렬 리뷰 렌즈** — 대형/보안 민감 변경은 리뷰어 4개(`LENS: security/performance/testing/maintainability`)가 동시 리뷰(보고 전용, 수정은 개발자에게 라우팅). 소형 변경은 기존 단일 리뷰어(자동수정 포함) 유지.
+- **N-투표 판정** — 판정이 애매한 수용 기준은 독립 spec-verifier 3개(`SCOPE: AC-n`)가 투표, 다수결 확정.
+- **디자인 판정단** — `@buildcrew {작업}, 3 designs`로 서로 다른 방향의 후보를 병렬 생성, spec-challenger가 심사해 승자 채택.
+
+이걸 안전하게 만드는 규칙 하나: **병렬화는 읽기 전용 에이전트만. 쓰는 놈(developer, 풀 리뷰어)은 항상 혼자 돈다.**
 
 ---
 

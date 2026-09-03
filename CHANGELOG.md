@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.15.0
+
+Parallel quality fleet. Read-only verification stages now fan out concurrently; write stages still run alone. Verification wall-clock drops to the slowest single member instead of the sum.
+
+### Changed: Feature pipeline verification is a parallel fleet
+
+- After developer, the orchestrator dispatches **qa-tester ∥ browser-qa ∥ spec-verifier in a single message** (all read-only, mutually independent). Gate on the combined result: any failure → one developer pass on the merged findings → only failed members re-run (max 2 cycles). Reviewer still requires spec-verifier PASS.
+- Hard safety rule added: never dispatch two write-capable agents concurrently.
+
+### Added: parallel review/verify patterns
+
+- **Reviewer LENS mode** — for >3-file or security-sensitive changes, 4 reviewer instances run concurrently with `LENS: security|performance|testing|maintainability`, each report-only to `06-review-{lens}.md` (no auto-fix — concurrent writers would conflict); fixes route to developer. Plain single-reviewer mode (with auto-fix) unchanged for small diffs.
+- **Spec-verifier SCOPE mode + N-vote** — a disputed criterion gets 3 independent `SCOPE: AC-n` voters, majority decides, PARTIAL disallowed for voters.
+- **Design panel (opt-in)** — `@buildcrew {task}, N designs` generates N candidates from distinct angles in parallel; spec-challenger judges and grafts runner-up ideas into the winner.
+
+### Docs & tests
+
+- README en/ko: Parallel Quality Fleet section, pipeline diagrams with ∥ notation. Skills: `buildcrew` SKILL.md fleet dispatch + single-context fallback. New content assertions in setup tests.
+
 ## v1.14.0
 
 Governance release. Documents and hardens what production teams ask about agent fleets: who can do what (least privilege), what happened (audit log), and which model runs which role.

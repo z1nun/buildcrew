@@ -22,7 +22,7 @@ AI coding agents are powerful, but without structure they produce inconsistent r
 
 ```
 You:   @buildcrew Add user authentication
-Crew:  Planner → Designer → Developer → QA → Browser QA → Spec-Verify → Reviewer → Ship
+Crew:  Planner → Designer → Developer → [QA ∥ Browser QA ∥ Spec-Verify] → Reviewer → Ship
 ```
 
 No external dependencies. No runtime. No binaries. Just Markdown.
@@ -111,7 +111,7 @@ Talk to `@buildcrew` naturally. It auto-detects the mode.
 
 | Mode | Example | Pipeline |
 |------|---------|----------|
-| **Feature** | "Add user dashboard" | Plan → Plan-Challenger → Design → Spec-Challenger → Dev → QA → Browser QA → Spec-Verify → Review → Coherence |
+| **Feature** | "Add user dashboard" | Plan → Plan-Challenger → Design → Spec-Challenger → Dev → [QA ∥ Browser QA ∥ Spec-Verify] → Review → Coherence |
 | **Project Audit** | "full project audit" | Scan → Prioritize → Fix → Verify (loop) |
 | **Browser QA** | "browser qa localhost:3000" | Playwright testing + health score |
 | **Security** | "security audit" | OWASP + STRIDE + secrets + deps |
@@ -375,6 +375,19 @@ node node_modules/buildcrew/bin/dashboard-demo.js
 ```
 
 The demo simulates a full Feature pipeline with realistic Korean dialogue between agents.
+
+---
+
+## Parallel Quality Fleet
+
+Read-only stages fan out; write stages run alone. Since v1.15 the orchestrator dispatches independent verification agents **concurrently**:
+
+- **Verification fleet** — qa-tester ∥ browser-qa ∥ spec-verifier run in a single parallel dispatch after developer. Any failure → one developer fix pass from the merged findings → only the failed members re-run (max 2 cycles).
+- **Parallel review lenses** — for large or security-sensitive changes, 4 reviewer instances (`LENS: security/performance/testing/maintainability`) review concurrently, report-only; fixes route to developer. Small changes keep the single auto-fixing reviewer.
+- **N-vote adjudication** — a disputed acceptance criterion gets 3 independent `SCOPE: AC-n` spec-verifier voters; majority decides.
+- **Design panel** — `@buildcrew {task}, 3 designs` generates candidates from distinct angles in parallel; spec-challenger judges, picks a winner, and grafts the best runner-up ideas.
+
+The safety rule that makes this sound: **only read-only agents parallelize; anything that writes (developer, full reviewer) always runs alone.**
 
 ---
 

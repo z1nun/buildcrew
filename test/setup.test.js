@@ -94,6 +94,18 @@ describe('agent files', () => {
     expect(content).toContain('Status Log');
     expect(content).toContain('## Rules');
   });
+
+  it('parallel fleet is wired: orchestrator fleet rule + reviewer LENS + spec-verifier SCOPE', () => {
+    const orch = readFileSync(join(AGENTS_DIR, 'buildcrew.md'), 'utf8');
+    expect(orch).toContain('verification fleet');
+    expect(orch).toContain('in a single message');
+    expect(orch).toContain('Never dispatch two write-capable agents concurrently');
+    const reviewer = readFileSync(join(AGENTS_DIR, 'reviewer.md'), 'utf8');
+    expect(reviewer).toContain('LENS Mode');
+    expect(reviewer).toContain('NO auto-fix');
+    const verifier = readFileSync(join(AGENTS_DIR, 'spec-verifier.md'), 'utf8');
+    expect(verifier).toContain('SCOPE Mode');
+  });
 });
 
 describe('model assignments', () => {

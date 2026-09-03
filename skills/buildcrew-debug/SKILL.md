@@ -1,7 +1,7 @@
 ---
 name: buildcrew-debug
 description: Root-cause debugging with the buildcrew investigator — 4-phase investigation (investigate, analyze, hypothesize, implement) verified by QA. Use when the user reports a bug, error, stack trace, or asks why something is broken.
-version: 1.14.0
+version: 1.15.0
 ---
 
 # buildcrew-debug — Root Cause Debugging

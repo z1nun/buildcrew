@@ -1,7 +1,7 @@
 ---
 name: buildcrew-ship
 description: Ship with the buildcrew shipper — pre-flight tests, version bump, changelog, commit, push, PR creation. Use when the user asks to ship, release, deploy, push, or create a PR.
-version: 1.14.0
+version: 1.15.0
 ---
 
 # buildcrew-ship — Release Workflow
