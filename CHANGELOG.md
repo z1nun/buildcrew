@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.13.0
+
+Spec-driven development release. The feature pipeline now has a two-stage review: an independent **spec-compliance gate** before the code-quality review, closing the "beautifully built but does the wrong thing" hole.
+
+### Added: `spec-verifier` agent (18th agent)
+
+- New `agents/spec-verifier.md` (sonnet). Runs after qa-tester/browser-qa and BEFORE reviewer. Verifies every acceptance criterion from `01-plan.md` against the actual implementation with `file:line` evidence, checks design-spec conformance, and flags scope creep. Verdict PASS/FAIL — one UNMET criterion fails the gate.
+- Orchestrator wiring: FAIL re-dispatches `developer` with the Unmet Summary (max 2 fix cycles, then escalate); `reviewer` is dispatched only after PASS. New output artifact `03.5-spec-verification.md`; pre-ship checklist and crew report updated.
+- `planner` acceptance criteria are now numbered (`AC-1 …`) so the verifier can cite them per-criterion.
+- Role separation is explicit: spec-verifier answers "does it do what was specified?", reviewer answers "is it well built?" — the orchestrator forbids merging the two stages.
+
+### Changed
+
+- `skills/buildcrew/SKILL.md` pipeline includes the spec-verifier fix loop; all skill versions bumped.
+- README (en/ko): 18-agent count, pipeline diagrams, agent tables.
+
 ## v1.12.0
 
 Agent Skills release. buildcrew now ships its pipelines in the open [Agent Skills](https://agentskills.io) SKILL.md standard alongside the existing Claude Code subagents — one install works across Claude Code, Codex, GitHub Copilot, Cursor, Gemini CLI and other skills-compatible tools.
