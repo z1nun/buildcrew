@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.14.0
+
+Governance release. Documents and hardens what production teams ask about agent fleets: who can do what (least privilege), what happened (audit log), and which model runs which role.
+
+### Changed: permission preset hardening
+
+- Deny list additions in `--install --with-permissions`: `Bash(git push -f*)` (short-flag force-push variant), `Bash(git clean -fd*)`, `Bash(npm publish*)`, `Bash(npm unpublish*)` — shipping to a registry now always requires explicit human approval, even in relaxed permission modes. New test locks the entries in.
+
+### Added: Governance section (README en/ko)
+
+- **Least privilege**: per-agent `tools:` frontmatter as the permission boundary; what the preset allows vs denies.
+- **Audit log**: `.claude/buildcrew/events.jsonl` positioned as the machine-readable audit trail (who/what/when/which session) with `watch` for live review and `report` for after-the-fact summaries; Handoff Records + coherence score as the artifact-level counterpart.
+- **Model governance**: documents that `model:` aliases (`opus`/`sonnet`) auto-resolve to the current generation (Claude 5 family included) and how to pin/downgrade a role by editing the installed agent file.
+
+### Housekeeping
+
+- Removed an unrelated analysis doc that was sitting untracked in the repo root.
+
 ## v1.13.0
 
 Spec-driven development release. The feature pipeline now has a two-stage review: an independent **spec-compliance gate** before the code-quality review, closing the "beautifully built but does the wrong thing" hole.

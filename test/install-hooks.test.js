@@ -99,6 +99,14 @@ describe('buildcrewPermissions shape', () => {
     expect(p.deny).toContain('Bash(sudo *)');
     expect(p.deny).toContain('Bash(git push --force*)');
   });
+
+  it('denies outward-facing and history-destroying commands (v1.14 governance)', () => {
+    const p = buildcrewPermissions();
+    expect(p.deny).toContain('Bash(git push -f*)');
+    expect(p.deny).toContain('Bash(git clean -fd*)');
+    expect(p.deny).toContain('Bash(npm publish*)');
+    expect(p.deny).toContain('Bash(npm unpublish*)');
+  });
 });
 
 describe('install — fresh project', () => {

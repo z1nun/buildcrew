@@ -208,6 +208,16 @@ npx buildcrew add         # 사용 가능한 템플릿 목록
 
 ---
 
+## 거버넌스
+
+buildcrew는 에이전트를 프로덕션 행위자처럼 다룹니다: 최소 권한, 감사 로그, 무단 배포 금지.
+
+- **최소 권한** — 모든 에이전트는 frontmatter의 `tools:` 목록만 사용합니다. QA·감사 역할은 읽기 전용, 코드 수정은 `developer`만, git push는 `shipper`만. 권한 프리셋(`--install --with-permissions`)은 일상 명령을 allowlist에 넣되 파괴적·외부 공개 명령(`rm -rf`, `sudo`, force-push, `git reset --hard`, `git clean -fd`, `npm publish`/`unpublish`)은 **deny**로 항상 사람의 승인을 요구합니다.
+- **감사 로그** — 모든 에이전트 디스패치·완료·파일 쓰기가 훅을 통해 `.claude/buildcrew/events.jsonl`에 기록됩니다. 누가·언제·어느 세션에서 무엇을 했는지의 기계가독 감사 추적. `npx buildcrew watch`로 실시간 확인, `npx buildcrew report`로 사후 요약. 파이프라인 문서의 Handoff Record와 coherence-auditor의 협업 점수는 산출물 레벨에서 같은 질문에 답합니다.
+- **모델 거버넌스** — 에이전트의 `model:`은 별칭(`opus`, `sonnet`)이라 Claude Code가 자동으로 현행 세대(Claude 5 계열 포함)로 해석합니다. 특정 역할을 고정/다운그레이드하려면 설치된 `.claude/agents/<이름>.md`의 `model:` 필드를 수정하세요.
+
+---
+
 ## 기능 파이프라인
 
 기능마다 전체 문서 체인이 자동 생성됩니다:

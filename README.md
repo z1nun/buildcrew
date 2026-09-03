@@ -378,6 +378,24 @@ The demo simulates a full Feature pipeline with realistic Korean dialogue betwee
 
 ---
 
+## Governance
+
+buildcrew treats agents like production actors: least privilege, an audit trail, and no silent shipping.
+
+### Least privilege
+
+Every agent declares its own `tools:` list in its frontmatter — QA and audit roles get read-only access, only `developer` writes code, only `shipper` touches git push. The optional permission preset (`--install --with-permissions`) adds a project allowlist for routine read/build commands and **denies** destructive or outward-facing ones: `rm -rf`, `sudo`, force-push, `git reset --hard`, `git clean -fd`, and `npm publish`/`npm unpublish` always require explicit human approval.
+
+### Audit log
+
+Every agent dispatch, completion, and file write is appended to `.claude/buildcrew/events.jsonl` by the hooks — a machine-readable audit trail of who did what, when, in which session. Review it live with `npx buildcrew watch`, or summarize a session after the fact with `npx buildcrew report`. The Handoff Records inside pipeline documents plus the coherence-auditor's coordination score answer the same question at the artifact level: can you prove the team actually coordinated?
+
+### Model governance
+
+Agent frontmatter uses model *aliases* (`opus`, `sonnet`), which Claude Code resolves to the current generation automatically — buildcrew tracks new model families (including Claude 5) without a package update. To pin or downgrade a role, edit its installed file in `.claude/agents/<name>.md` and change the `model:` field; the installer's version-aware sync won't overwrite your local edit until that agent's definition actually changes upstream.
+
+---
+
 ## Feature Pipeline
 
 Each feature generates a full document chain:

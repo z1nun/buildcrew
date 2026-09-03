@@ -1,7 +1,7 @@
 ---
 name: buildcrew
 description: Run the full buildcrew feature pipeline — plan, adversarial challenge, design, implement, QA, review, coherence audit. Use when the user asks to build, add, or implement a feature and wants the structured multi-agent lifecycle instead of ad-hoc coding.
-version: 1.13.0
+version: 1.14.0
 ---
 
 # buildcrew — Feature Pipeline
