@@ -2,7 +2,7 @@
 
 > [English](README.md) | **한국어** | [문서](https://buildcrew-landing.vercel.app)
 
-Claude Code를 위한 17개 AI 에이전트 팀. 생각부터 배포까지 전체 개발 라이프사이클을 자동으로 진행합니다.
+Claude Code를 위한 18개 AI 에이전트 팀. 생각부터 배포까지 전체 개발 라이프사이클을 자동으로 진행합니다.
 
 ```bash
 npx buildcrew
@@ -14,7 +14,7 @@ npx buildcrew
 
 AI 코딩 에이전트가 아무리 똑똑해도, 구조 없이 쓰면 결과가 들쑥날쑥합니다. buildcrew는 Claude Code에 **팀**, **프로세스**, **컨텍스트**를 제공합니다.
 
-- **팀** — 역할이 명확한 17개 전문 에이전트 (9 opus + 8 sonnet)
+- **팀** — 역할이 명확한 18개 전문 에이전트 (9 opus + 9 sonnet)
 - **프로세스** — 품질 게이트가 있는 순차 파이프라인. 통과 못하면 자동으로 재시도
 - **하네스** — 코드베이스를 분석해서 프로젝트 맥락을 자동으로 파악
 - **오케스트레이터** — `@buildcrew`에게 말하면 알아서 적절한 에이전트를 투입
@@ -22,7 +22,7 @@ AI 코딩 에이전트가 아무리 똑똑해도, 구조 없이 쓰면 결과가
 
 ```
 나:     @buildcrew 유저 인증 추가해줘
-크루:   기획자 → 디자이너 → 개발자 → QA → 브라우저 QA → 리뷰어 → 배포
+크루:   기획자 → 디자이너 → 개발자 → QA → 브라우저 QA → 스펙검증 → 리뷰어 → 배포
 ```
 
 외부 의존성 없음. 런타임 없음. 바이너리 없음. 마크다운 파일만으로 동작합니다.
@@ -38,7 +38,7 @@ npx buildcrew
 ```
 
 인터랙티브 셋업이 순서대로 진행합니다:
-1. 17개 에이전트 + 오케스트레이터 설치
+1. 18개 에이전트 + 오케스트레이터 설치
 2. Playwright MCP 설치 여부 (브라우저 테스트에 필요)
 3. 프로젝트 하네스 생성 여부 (스택 자동 감지)
 4. 추가 하네스 템플릿 선택
@@ -76,6 +76,7 @@ npx buildcrew
 |---------|------|------|
 | **qa-tester** | sonnet | 5가지 테스트 전략 질문 + 테스트 맵. 엣지 케이스 자동 생성, 신뢰도 점수 기반 분류. |
 | **browser-qa** | sonnet | 4단계 브라우저 테스트 (파악→탐색→스트레스→판단). Playwright MCP. 건강 점수 0-100. |
+| **spec-verifier** | sonnet | 코드 리뷰 전 스펙 준수 게이트. 모든 수용 기준을 file:line 증거로 검증 — PASS/FAIL, FAIL이면 개발자 재투입. |
 | **reviewer** | opus | 4전문가 심층 리뷰 (보안, 성능, 테스트, 유지보수) + 적대적 리뷰 + 자동 수정. 코드 작성 후 실행. |
 | **health-checker** | sonnet | 3단계 코드 품질 (감지→측정→처방). 가중 점수 0-10 + 트렌드 + 조치 항목 5개. |
 
@@ -110,7 +111,7 @@ npx buildcrew
 
 | 모드 | 예시 | 파이프라인 |
 |------|------|----------|
-| **Feature** | "유저 대시보드 추가해줘" | 기획 → plan-challenger → 디자인 → spec-challenger → 개발 → QA → 브라우저 QA → 리뷰 → coherence 감사 |
+| **Feature** | "유저 대시보드 추가해줘" | 기획 → plan-challenger → 디자인 → spec-challenger → 개발 → QA → 브라우저 QA → spec-verifier → 리뷰 → coherence 감사 |
 | **Project Audit** | "프로젝트 전체 점검해줘" | 스캔 → 우선순위 → 수정 → 검증 (반복) |
 | **Browser QA** | "브라우저 테스트해줘" | Playwright 테스트 + 건강 점수 |
 | **Security** | "보안 점검해줘" | OWASP + STRIDE + 시크릿 + 의존성 |
@@ -259,7 +260,7 @@ npx buildcrew add         # 사용 가능한 템플릿 목록
          │
          ├── 생각:     thinker → architect
          ├── 빌드:     planner → designer → developer
-         ├── 품질:     qa-tester → browser-qa → reviewer
+         ├── 품질:     qa-tester → browser-qa → spec-verifier → reviewer
          ├── 보안/운영: security-auditor, canary-monitor, shipper
          ├── 리뷰:     architect, design-reviewer, qa-auditor
          └── 디버그:   investigator

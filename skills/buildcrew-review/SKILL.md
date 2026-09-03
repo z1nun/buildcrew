@@ -1,7 +1,7 @@
 ---
 name: buildcrew-review
 description: Review with buildcrew reviewer roles — code review with auto-fix, pre-code architecture review, or UX/design review with 0-10 scoring. Use when the user asks for a code review, PR review, architecture review, or design/UX review.
-version: 1.12.0
+version: 1.13.0
 ---
 
 # buildcrew-review — Review Modes

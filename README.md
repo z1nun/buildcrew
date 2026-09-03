@@ -2,7 +2,7 @@
 
 > **English** | [한국어](README.ko.md) | [Docs](https://buildcrew-landing.vercel.app)
 
-15 AI agents for Claude Code — full development lifecycle from product thinking to production monitoring.
+18 AI agents for Claude Code — full development lifecycle from product thinking to production monitoring.
 
 ```bash
 npx buildcrew
@@ -22,7 +22,7 @@ AI coding agents are powerful, but without structure they produce inconsistent r
 
 ```
 You:   @buildcrew Add user authentication
-Crew:  Planner → Designer → Developer → QA → Browser QA → Reviewer → Ship
+Crew:  Planner → Designer → Developer → QA → Browser QA → Spec-Verify → Reviewer → Ship
 ```
 
 No external dependencies. No runtime. No binaries. Just Markdown.
@@ -38,7 +38,7 @@ npx buildcrew
 ```
 
 The interactive setup will:
-1. Install 17 agents + orchestrator
+1. Install 18 agents + orchestrator
 2. Ask to install Playwright MCP (required for browser testing)
 3. Ask to generate project harness (auto-detects your stack)
 4. Let you pick additional harness templates
@@ -76,6 +76,7 @@ Runs between pipeline stages to catch errors *before* downstream agents commit. 
 |-------|-------|------|
 | **qa-tester** | sonnet | 5 Test Strategy Questions + Test Map methodology. Edge case generation, confidence-scored findings. |
 | **browser-qa** | sonnet | 4-phase browser testing (orient, explore, stress, judge) via Playwright MCP. Health score 0-100, self-review. |
+| **spec-verifier** | sonnet | Spec compliance gate before code review. Verifies every acceptance criterion against the implementation with file:line evidence — PASS/FAIL, FAIL loops back to developer. |
 | **reviewer** | opus | 4-specialist analysis (security, perf, testing, maintainability) + confidence scoring + adversarial pass + auto-fix. Runs AFTER code. |
 | **health-checker** | sonnet | 3-phase code quality (detect, measure, prescribe). Weighted 0-10 score + trends + top 5 actionable items. |
 
@@ -110,7 +111,7 @@ Talk to `@buildcrew` naturally. It auto-detects the mode.
 
 | Mode | Example | Pipeline |
 |------|---------|----------|
-| **Feature** | "Add user dashboard" | Plan → Plan-Challenger → Design → Spec-Challenger → Dev → QA → Browser QA → Review → Coherence |
+| **Feature** | "Add user dashboard" | Plan → Plan-Challenger → Design → Spec-Challenger → Dev → QA → Browser QA → Spec-Verify → Review → Coherence |
 | **Project Audit** | "full project audit" | Scan → Prioritize → Fix → Verify (loop) |
 | **Browser QA** | "browser qa localhost:3000" | Playwright testing + health score |
 | **Security** | "security audit" | OWASP + STRIDE + secrets + deps |
@@ -202,7 +203,7 @@ designer → spec-challenger ─┬─ APPROVED → developer
 
 ## Verifiable Coordination
 
-How do you know the 17 agents actually worked as a team, instead of running in sequence and pretending to collaborate?
+How do you know the 18 agents actually worked as a team, instead of running in sequence and pretending to collaborate?
 
 buildcrew answers this with **Coordination Score** — a 0-100% measurement output at the end of every Feature run.
 
@@ -302,7 +303,7 @@ npx buildcrew add         # List available templates
 
 ## Dashboard
 
-Real-time observability for buildcrew sessions. A pixel-art office visualization where your 17 agents come alive — walking between rooms, filing issues, and progressing through the pipeline — all powered by Claude Code hooks and zero external dependencies.
+Real-time observability for buildcrew sessions. A pixel-art office visualization where your 18 agents come alive — walking between rooms, filing issues, and progressing through the pipeline — all powered by Claude Code hooks and zero external dependencies.
 
 ### Quick Start
 
@@ -433,7 +434,7 @@ Each feature generates a full document chain:
          ├── Think:        thinker → architect
          ├── Build:        planner → designer → developer
          ├── Adversarial:  plan-challenger, spec-challenger  (phase-boundary critics)
-         ├── Quality:      qa-tester → browser-qa → reviewer
+         ├── Quality:      qa-tester → browser-qa → spec-verifier → reviewer
          ├── Sec/Ops:      security-auditor, canary-monitor, shipper
          ├── Review:       architect, design-reviewer, qa-auditor
          ├── Meta:         coherence-auditor  (final handoff audit)

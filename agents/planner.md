@@ -2,7 +2,7 @@
 name: planner
 description: Product planner agent (opus) - multi-perspective planning with 4-lens review (product discovery, CEO challenge, engineering lock, design quality), produces battle-tested plans
 model: opus
-version: 1.8.0
+version: 1.13.0
 tools:
   - Read
   - Write
@@ -99,7 +99,8 @@ Write the initial plan with these sections:
 - [ ] As a [specific user], I want [action], so that [measurable benefit]
 
 ## Acceptance Criteria
-- [ ] [Specific, testable, binary — pass or fail, no "mostly works"]
+- [ ] AC-1: [Specific, testable, binary — pass or fail, no "mostly works"]
+- [ ] AC-2: [Number every criterion — spec-verifier cites them as AC-N in its verdict]
 
 ## Scope
 ### In Scope
