@@ -146,6 +146,27 @@ npx buildcrew
 
 ---
 
+## Agent Skills
+
+buildcrew는 7개의 [Agent Skills](https://agentskills.io)도 `.claude/skills/`에 함께 설치합니다 —
+같은 파이프라인을 오픈 SKILL.md 표준으로 패키징한 것으로, Claude Code, Codex,
+GitHub Copilot, Cursor, Gemini CLI 등 40개 이상의 도구에서 동작합니다.
+
+| 스킬 | 범위 |
+|------|------|
+| `buildcrew` | 전체 기능 파이프라인 (기획 → 챌린지 → 설계 → 챌린지 → 개발 → QA → 리뷰 → 정합성 감사) |
+| `buildcrew-qa` | 브라우저 QA, QA 감사, 헬스 체크 |
+| `buildcrew-security` | OWASP + STRIDE 감사 + 수정 루프 |
+| `buildcrew-debug` | 4단계 근본 원인 조사 |
+| `buildcrew-review` | 코드 / 아키텍처 / 디자인 리뷰 |
+| `buildcrew-ship` | 테스트 → 버전 → 체인지로그 → PR |
+| `buildcrew-think` | 6가지 강제 질문 + 설계 문서 |
+
+Claude Code에서는 스킬이 설치된 서브에이전트를 디스패치하고, 단일 컨텍스트 도구에서는
+같은 `.claude/agents/*.md` 역할 정의를 순차적으로 수행합니다 — 한 번 설치로 모든 도구에서.
+
+---
+
 ## 하네스 엔지니어링
 
 `npx buildcrew` 실행 시 코드베이스를 스캔해서 프로젝트 하네스를 자동 생성합니다.

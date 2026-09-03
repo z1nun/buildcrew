@@ -1,20 +1,21 @@
 {
   "name": "buildcrew",
-  "version": "1.11.0",
-  "description": "17 AI agents for Claude Code — full development lifecycle with adversarial challengers at plan and spec boundaries",
+  "version": "1.12.0",
+  "description": "17 AI agents + 7 Agent Skills for Claude Code — full development lifecycle with adversarial challengers at plan and spec boundaries",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "buildcrew": "./bin/setup.js",
-    "buildcrew-hook": "./bin/hook.js",
-    "buildcrew-watch": "./bin/watch.js"
+    "buildcrew": "bin/setup.js",
+    "buildcrew-hook": "bin/hook.js",
+    "buildcrew-watch": "bin/watch.js"
   },
   "files": [
     "bin/",
     "lib/",
     "agents/",
+    "skills/",
     "templates/",
     "README.md",
     "LICENSE"
@@ -22,6 +23,8 @@
   "keywords": [
     "claude",
     "claude-code",
+    "agent-skills",
+    "claude-skills",
     "ai-agents",
     "ai-team",
     "code-review",
@@ -34,7 +37,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/z1nun/buildcrew.git"
+    "url": "git+https://github.com/z1nun/buildcrew.git"
   },
   "scripts": {
     "test": "vitest run",

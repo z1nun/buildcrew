@@ -146,6 +146,28 @@ Each iteration runs the **full end-to-end pipeline**:
 
 ---
 
+## Agent Skills
+
+buildcrew also installs 7 [Agent Skills](https://agentskills.io) into `.claude/skills/` —
+the same pipelines, packaged in the open SKILL.md standard supported by Claude Code,
+Codex, GitHub Copilot, Cursor, Gemini CLI and 40+ other tools.
+
+| Skill | Covers |
+|-------|--------|
+| `buildcrew` | Full feature pipeline (plan → challenge → design → challenge → dev → QA → review → coherence) |
+| `buildcrew-qa` | Browser QA, QA audit, health check |
+| `buildcrew-security` | OWASP + STRIDE audit with fix loop |
+| `buildcrew-debug` | 4-phase root cause investigation |
+| `buildcrew-review` | Code / architecture / design review |
+| `buildcrew-ship` | Test → version → changelog → PR |
+| `buildcrew-think` | 6 forcing questions + design doc |
+
+In Claude Code the skills dispatch the installed subagents. In single-context tools
+they adopt each role sequentially from the same `.claude/agents/*.md` definitions —
+one install, every tool.
+
+---
+
 ## Adversarial Challengers
 
 Between the existing pipeline stages, two challenger agents attack the upstream artifact before downstream agents commit. A wrong plan poisons everything downstream — `plan-challenger` catches plan errors while they're still cheap. A thin spec forces developers to invent critical details — `spec-challenger` catches spec gaps before developer writes a line.
