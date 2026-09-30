@@ -59,7 +59,7 @@ Then start working:
 |-------|-------|------|
 | **planner** | opus | 6 Forcing Questions + 4-Lens Self-Review (CEO, Engineering, Design, QA). Plans scored 1-10 per lens. |
 | **designer** | opus | UI/UX research + motion engineering. Playwright screenshots, Figma MCP, production components with animations. AI slop blacklist. |
-| **developer** | opus | 6 Implementation Questions + 3-Lens Self-Review (Architecture, Code Quality, Safety). Error Handling Protocol. 3 modes: feature, bugfix, iteration. |
+| **developer** | opus | 7 Implementation Questions (incl. consumer/cascade mapping) + 3-Lens Self-Review (Architecture, Code Quality, Safety). Error Handling Protocol. 3 modes: feature, bugfix, iteration. |
 
 ### Adversarial Team
 
@@ -77,7 +77,7 @@ Runs between pipeline stages to catch errors *before* downstream agents commit. 
 | **qa-tester** | sonnet | 5 Test Strategy Questions + Test Map methodology. Edge case generation, confidence-scored findings. |
 | **browser-qa** | sonnet | 4-phase browser testing (orient, explore, stress, judge) via Playwright MCP. Health score 0-100, self-review. |
 | **spec-verifier** | sonnet | Spec compliance gate before code review. Verifies every acceptance criterion against the implementation with file:line evidence — PASS/FAIL, FAIL loops back to developer. |
-| **reviewer** | opus | 4-specialist analysis (security, perf, testing, maintainability) + confidence scoring + adversarial pass + auto-fix. Runs AFTER code. |
+| **reviewer** | opus | 4-specialist analysis (security, perf, testing, maintainability) + cascade/consumer-coverage check + confidence scoring + adversarial pass + auto-fix. Runs AFTER code. |
 | **health-checker** | sonnet | 3-phase code quality (detect, measure, prescribe). Weighted 0-10 score + trends + top 5 actionable items. |
 
 ### Security & Ops

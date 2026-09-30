@@ -1,7 +1,7 @@
 ---
 name: buildcrew-security
 description: Run a buildcrew security audit — OWASP Top 10 + STRIDE threat modeling with a fix loop for critical findings. Use when the user asks for a security audit, vulnerability scan, or security check.
-version: 1.15.0
+version: 1.16.0
 ---
 
 # buildcrew-security — Security Audit

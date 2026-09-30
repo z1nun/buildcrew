@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.16.0
+
+Cascade-aware agents. A change to a shared type, API payload, util, endpoint, or state source almost always has more than one consumer — the same data flows to several screens, and updating one while missing the others is the most common "you fixed it here but it's still broken there" bug. Agents now trace and update every consumer.
+
+### Changed: developer traces consumers before and after editing
+
+- **7th Implementation Question added** — "Where are ALL the consumers of what I'm changing? (Cascade)". Phase-1 codebase analysis now maps every call-site, subscriber, and display point (backend **and** frontend) of any shared thing being changed, cross-checking the harness `architecture.md` Connection Map if present.
+- **Phase-2 "Consumer sweep" step** — walk that list and update every consumer, or state why one is intentionally skipped. Never ship a partial update.
+- **Phase-3 self-review "Cascade completeness" lens** — same data/behavior flowing to another screen, page, endpoint, or type must all be updated. developer bumped 1.8.6 → 1.9.0.
+
+### Changed: reviewer flags partial updates
+
+- New **Cascade / Consumer Coverage** check in the Critical Pass (HIGH): `grep` the changed symbol/field/route and confirm every consumer was updated — a change that fixes the card but leaves the list/other page stale is a finding. reviewer bumped 1.15.0 → 1.16.0.
+
+### Changed: harness scaffold ships the rule
+
+- `buildcrew init` now writes a top-of-file **Cascade Rule** section into the generated `rules.md`, so every new project inherits "fix every consumer, not just one" as a standing team rule.
+- Docs: README en/ko note the cascade behavior.
+
 ## v1.15.0
 
 Parallel quality fleet. Read-only verification stages now fan out concurrently; write stages still run alone. Verification wall-clock drops to the slowest single member instead of the sum.

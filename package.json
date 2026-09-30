@@ -1,6 +1,6 @@
 {
   "name": "buildcrew",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "18 AI agents + 7 Agent Skills for Claude Code — full development lifecycle with adversarial challengers and a spec-compliance gate before code review",
   "homepage": "https://buildcrew-landing.vercel.app",
   "author": "z1nun",

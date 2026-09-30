@@ -1,8 +1,8 @@
 ---
 name: reviewer
-description: Staff engineer reviewer - 4-specialist deep analysis (security, performance, testing, maintainability) with confidence scoring, fix-first approach, adversarial pass, and scope drift detection
+description: Staff engineer reviewer - 4-specialist deep analysis (security, performance, testing, maintainability) with confidence scoring, fix-first approach, adversarial pass, scope drift detection, and cascade/consumer-coverage checks
 model: opus
-version: 1.15.0
+version: 1.16.0
 tools:
   - Read
   - Glob
@@ -103,6 +103,7 @@ These are the checks that catch production-breaking bugs. Run every one against 
 | **Shell/Command Injection** | No `exec()` or `spawn()` with user input. No `dangerouslySetInnerHTML` with user content. Template literals in queries checked. | CRITICAL |
 | **Auth & Access Control** | Every new API route has auth check. Data queries scoped to current user/role. No direct object reference vulnerabilities (user A can't access user B's data by changing an ID). | CRITICAL |
 | **Enum Completeness** | Switch statements have default cases. TypeScript union types exhaustively handled. New enum values handled in all existing switch/if chains. | HIGH |
+| **Cascade / Consumer Coverage** | A changed shared type/field, API payload, util, endpoint, or state source updated at **every** consumer — not just one. `grep` the changed symbol/field/route and confirm all call-sites, subscribers, and display points were updated (backend payload **and** frontend type + each component that reads it). Same data flowing to multiple screens/pages must be updated everywhere. Partial updates ("fixed in the card, still stale in the list/other page") are a HIGH finding. Cross-check the harness `architecture.md` Connection Map if present. | HIGH |
 | **Input Validation** | All user inputs validated: type, length, format, range. Reject on failure with clear error. Server-side validation even if client validates. | HIGH |
 
 For each finding:
