@@ -1,6 +1,19 @@
 # Changelog
 
-## v1.16.0
+## v1.17.0
+
+Senior designer. The designer agent kept shipping one safe, AI-looking option with motion specs that never made it into code. v1.17.0 restructures the designer around divergent exploration, anti-slop enforcement, and hard gates that make junior output impossible to ship.
+
+### Changed: designer explores before committing (1.8.7 → 1.9.0)
+
+- **New Phase 2: Divergent Exploration** — 3 genuinely different concepts required before any design decision (A: conventional-best, B: editorial/expressive, C: context-native), scored on fit/distinctiveness/feasibility/brand. Winner picked, best ideas grafted from losers. New output artifact: `02-explorations.md`. Interchangeable concepts must be thrown away and regenerated.
+- **Design Personality required** — every design commits to a named aesthetic direction ("clean and modern is NOT a direction") plus one signature element per screen.
+- **AI Slop Blacklist expanded (+11)** — default Inter font, untouched Tailwind palette, glassmorphism everywhere, emoji-as-icons, gradient text, centered-headline-two-buttons hero, perfect symmetry, uniform 16px gaps, icon+title+description×3 sections, pure-black dark mode. Plus the mirror test: "if this screenshot showed up on Twitter, would people think an AI made it?"
+- **Motion Implementation Gate (hard requirement)** — motion written only in the spec no longer counts. Every motion-map row must exist as working code, every feature needs one signature interaction, custom easing curves only, and handoff requires a `file:line` table of implemented animations. Empty table = incomplete work.
+- **Senior Craft Standards** — 12 junior-tell vs senior-habit pairs: real type scale contrast, optical alignment, layered shadows, tabular-nums, designed empty states, custom focus rings.
+- **Scored self-review replaces the checklist** — 8 dimensions rated 0-10; any dimension below 8 forces iteration (max 2 rounds) before handoff. Scorecard recorded in `02-design.md` for design-reviewer.
+
+
 
 Cascade-aware agents. A change to a shared type, API payload, util, endpoint, or state source almost always has more than one consumer — the same data flows to several screens, and updating one while missing the others is the most common "you fixed it here but it's still broken there" bug. Agents now trace and update every consumer.
 
