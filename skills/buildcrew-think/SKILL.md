@@ -1,7 +1,7 @@
 ---
 name: buildcrew-think
 description: Product thinking with the buildcrew thinker — 6 forcing questions that test whether something is worth building, ending in a design doc. Use when the user has a product idea, asks "is this worth building", or wants to think a concept through before code.
-version: 1.17.0
+version: 1.18.0
 ---
 
 # buildcrew-think — Product Thinking
