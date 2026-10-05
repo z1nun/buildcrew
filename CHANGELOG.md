@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.18.0
+
+Changelog-aware pipeline and GitHub Releases. The changelog used to exist only at ship time; now it accumulates during development, stays readable as it grows, and feeds GitHub Releases automatically. Plus a pipeline-filename fix that was quietly breaking agent handoffs.
+
+### Changed: changelog is maintained across the pipeline, not just at ship
+
+- **developer accumulates `[Unreleased]` entries** — new Phase-2 step: after implementing, add one user-facing line under `## [Unreleased]` in CHANGELOG.md (if the repo has one). developer bumped 1.9.0 → 1.10.0.
+- **shipper promotes `[Unreleased]` to the version section** at release time, merging anything notable from the commit log.
+- **Changelog size management** — newest-first is now an explicit rule, and past ~400 lines the shipper archives entries older than the last 5 versions to `docs/changelog-archive/{year}.md`. Agents read the file top-down; old entries stop costing context.
+
+### Added: shipper creates GitHub Releases (1.9.0 → 1.10.0)
+
+- **New Phase 5.5** — after the version bump, the shipper tags and creates a GitHub Release using the CHANGELOG section as the release notes (never separate release-note files in the repo).
+- **Trunk-release detection** — repos that release directly from the default branch (release commits, no merge commits) skip the PR and go straight to tag + Release; PR-flow repos defer tagging until after merge so squash-merges don't orphan the tag.
+- **Publish-workflow awareness** — if a publish-on-release workflow exists (e.g. npm Trusted Publishing), the shipper notes that publishing triggers automatically and does not race it by publishing manually.
+- **CI: `release.yml`** — npm Trusted Publishing (OIDC) workflow: publishing happens automatically when a GitHub Release is published. No NPM_TOKEN, no OTP.
+
+### Fixed: pipeline filename drift broke agent handoffs
+
+- Agent docs disagreed on pipeline filenames — `03-impl.md` vs `03-dev-notes.md`, `04-qa.md` vs `04-qa-report.md`. qa-tester's own Output section and Handoff Record section pointed at different names, so downstream agents (and the coherence-auditor) could look for a file the previous agent never wrote. All agents now use `03-impl.md` and `04-qa.md`. Verified empirically: a live qa-tester run followed its md near-perfectly (found 5/5 seeded bugs, every required section present) — its only deviation was this filename contradiction.
+
 ## v1.17.0
 
 Senior designer. The designer agent kept shipping one safe, AI-looking option with motion specs that never made it into code. v1.17.0 restructures the designer around divergent exploration, anti-slop enforcement, and hard gates that make junior output impossible to ship.

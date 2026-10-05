@@ -32,7 +32,7 @@ Output emoji-tagged status messages at each major step:
    Criteria: 11/12 passed
    Bugs: 2 found (1 major, 1 minor)
    Confidence: 8/10
-📄 Writing → 04-qa-report.md
+📄 Writing → 04-qa.md
 ✅ QA TESTER — Complete ({passed}/{total} passed, {issues} issues)
 ```
 
@@ -224,7 +224,7 @@ Every finding gets a confidence score:
 
 ## Output
 
-Write to `.claude/pipeline/{feature-name}/04-qa-report.md`:
+Write to `.claude/pipeline/{feature-name}/04-qa.md`:
 
 ```markdown
 # QA Report: {Feature Name}

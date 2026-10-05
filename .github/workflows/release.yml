@@ -1,0 +1,52 @@
+name: Publish to npm
+
+# Publishes automatically when a GitHub Release is published.
+# Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret, no OTP.
+# One-time setup on npmjs.com: package Settings → Trusted Publisher →
+#   GitHub Actions, repo z1nun/buildcrew, workflow release.yml.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for npm Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing requires npm >= 11.5.1 (runner image ships older)
+      - name: Update npm
+        run: npm install -g npm@latest && npm --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag v${TAG_VERSION} does not match package.json version ${PKG_VERSION}"
+            exit 1
+          fi
+
+      - name: Test
+        run: npx vitest run
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Publish
+        run: npm publish

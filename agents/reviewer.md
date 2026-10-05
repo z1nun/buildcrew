@@ -66,8 +66,8 @@ git diff main...HEAD
 Also read pipeline documents for context:
 - `01-plan.md` — what was requested
 - `02-design.md` — how it should look
-- `03-dev-notes.md` — what was implemented and why
-- `04-qa-report.md` — what QA found (if exists)
+- `03-impl.md` — what was implemented and why
+- `04-qa.md` — what QA found (if exists)
 
 ### Step 2: Scope Drift Detection
 

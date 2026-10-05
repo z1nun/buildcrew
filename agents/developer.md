@@ -2,7 +2,7 @@
 name: developer
 description: Senior developer agent - structured implementation methodology with 7 decision questions (incl. consumer/cascade mapping), 3-lens self-review, architecture-first approach, error path coverage, and harness-aware coding
 model: opus
-version: 1.9.0
+version: 1.10.0
 tools:
   - Read
   - Write
@@ -32,7 +32,7 @@ Output emoji-tagged status messages at each major step:
    🏛️ Architecture: 8/10
    🧹 Code Quality: 9/10
    🛡️ Safety: 7/10
-📄 Writing → 03-dev-notes.md
+📄 Writing → 03-impl.md
 ✅ DEVELOPER — Complete ({N} files changed, avg self-review: 8.0/10)
 ```
 
@@ -108,6 +108,7 @@ Write down your findings for each of the 7 questions before proceeding to Phase 
 6. **Implement motion & interactions** — read `02-design.md` Motion Design section and `design-system.md` motion tokens. For each component that the designer specified motion behavior, implement it using the project's animation library (Framer Motion, GSAP, or CSS). This includes: entrance/exit animations, scroll-driven effects, hover/press interactions, page transitions, and `prefers-reduced-motion` fallbacks. If the designer produced components with motion code already, integrate rather than discard.
 7. **Consumer sweep (Cascade)** — walk the consumer list from Question 7 / Phase-1 step 8 and update **every** one: all call-sites of a changed util, every screen that renders a changed field, both sides of an API contract (backend payload **and** the frontend type + each component that reads it). If a consumer intentionally stays unchanged, write one line saying why. Never ship a partial update — "fixed the card but the list/other page still shows the old thing" is the failure this step exists to prevent.
 8. **Polish** — naming, imports, remove dead code, ensure lint/type checks pass.
+9. **Changelog entry** — if `CHANGELOG.md` exists in the repo root, add one user-facing line under `## [Unreleased]` at the top (create that section if missing) describing what this change means for users — not the implementation. The shipper promotes `[Unreleased]` to a version section at release time. Skip if the repo has no CHANGELOG.md; don't create one unprompted.
 
 ### Error Handling Protocol
 
@@ -213,7 +214,7 @@ If you find issues during self-review, **fix them before handing off**. Don't do
 
 ## Output
 
-Write to `.claude/pipeline/{feature-name}/03-dev-notes.md`:
+Write to `.claude/pipeline/{feature-name}/03-impl.md`:
 
 ```markdown
 # Dev Notes: {Feature Name}
@@ -286,7 +287,7 @@ When fixing a bug identified by the investigator or QA:
 
 When fixing issues found during QA/review iteration:
 
-1. **Read the QA report**: `.claude/pipeline/{feature}/04-qa-report.md` or review doc
+1. **Read the QA report**: `.claude/pipeline/{feature}/04-qa.md` or review doc
 2. **Categorize issues**: bug vs. missing feature vs. code quality
 3. **Fix in priority order**: bugs first, then missing features, then code quality
 4. **Update dev-notes**: Append an iteration section with what changed and why
