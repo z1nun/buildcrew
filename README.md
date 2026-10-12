@@ -167,6 +167,12 @@ In Claude Code the skills dispatch the installed subagents. In single-context to
 they adopt each role sequentially from the same `.claude/agents/*.md` definitions —
 one install, every tool.
 
+> **Want just the review step — hardened and standalone?**
+> [**PR Review Crew**](https://www.agensi.io/skills/pr-review-crew) packages the reviewer
+> into a single zero-setup `SKILL.md`: 5 lenses + an adversarial pass, stack rule packs
+> (Next.js/Supabase, Python, Go) with evidence recipes, and confidence-scored,
+> PR-comment-ready reports. Try it free, or get it for $12 on Agensi.
+
 ---
 
 ## Adversarial Challengers
